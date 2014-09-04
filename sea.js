@@ -86,7 +86,7 @@ var SeaORM = (function (angular) {
 		SeaModel.prototype.toJS = function () {
 			var js = {};
 			for(var field in _private[this._id].fields) {
-				if (typeof _private[this._id].fields[field] === "object") {
+				if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
 					js[field] = _private[this._id].fields[field].toJS();
 				} else {
 					js[field] = _private[this._id].fields[field];
@@ -101,7 +101,7 @@ var SeaORM = (function (angular) {
 		
 		SeaModel.prototype.get = function (field) {
 			if (typeof field === 'string' && _private[this._id].fields[field] !== undefined) {
-				if (typeof _private[this._id].fields[field] === "object") {
+				if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
 					return _private[this._id].fields[field].get();
 				}
 				return _private[this._id].fields[field];
@@ -111,7 +111,7 @@ var SeaORM = (function (angular) {
 		
 		SeaModel.prototype.set = function (field, value) {
 			if(typeof field === 'string' && _private[this._id].fields[field] !== undefined) {
-				if (typeof _private[this._id].fields[field] === "object") {
+				if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
 					_private[this._id].fields[field].set(value);
 					if(this.isLoaded) _private[this._id].resourceObject[field] = _private[this._id].fields[field].toJS();
 				} else {
