@@ -282,7 +282,8 @@ var SeaORM = (function (angular) {
 				SeaModel.apply(this, args);
 			};
 			
-			angular.extend(NewModel.prototype, SeaModel.prototype);
+			NewModel.prototype = Object.create(SeaModel.prototype);
+			NewModel.prototype.constructor = NewModel;
 			
 			Object.defineProperty(NewModel.prototype, 'url', { value: url, writable: false, enumerable: false, configurable: false });
 			
