@@ -81,7 +81,7 @@ Now, lat's use our new model.
             
             $scope.house.doors = 3;
             
-            // call PUT http://domain/house/2
+            // call PUT http://domain/house/:id
             $scope.house.save();
         });
         
