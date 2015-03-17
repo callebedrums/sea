@@ -65,7 +65,7 @@ var SeaORM = (function (angular) {
 			
 			for (var field in _private[this._id].fields) {
 				while(typeof _private[this._id].fields[field] == 'function'){
-					_private[this._id].fields[field] = _private[this._id].fields[field]();
+					_private[this._id].fields[field] = _private[this._id].fields[field](this);
 				}
 				addProperty(this, field);
 			}
@@ -201,9 +201,10 @@ var SeaORM = (function (angular) {
 	}()),
 		
 	Relational = (function () {
-		var Relational = function (model) {
+		var Relational = function (model, instance) {
 			this.object = null;
 			this.model = model;
+			this.instance = instance;
 		}
 		
 		Relational.prototype.get = function () { }
@@ -214,8 +215,8 @@ var SeaORM = (function (angular) {
 	}()),
 	
 	BelongsTo = (function () {
-		var BelongsTo = function (model) {
-			Relational.call(this, model);
+		var BelongsTo = function (model, instance) {
+			Relational.call(this, model, instance);
 		};
 		
 		BelongsTo.prototype.toJS = function () {
@@ -241,6 +242,33 @@ var SeaORM = (function (angular) {
 		};
 		
 		return BelongsTo;
+	}()),
+	
+	HasMany = (function () {
+		var HasMany = function (model, instance, related_field) {
+			Relational.call(this, model, instance);
+			this.related_field = related_field;
+		};
+		
+		HasMany.prototype.toJS = function () {
+			if(!this.object) return null;
+			var ids = [];
+			for(var i = 0; i < this.object.length; i++) {
+				ids.push(this.object[i].id);
+			}
+			return ids;
+		};
+		
+		HasMany.prototype.get = function () {
+			if(!this.object) {
+				var params = {};
+				params[this.related_field] = this.instance.id;
+				this.object = this.model.query(params);
+			}
+			return this.object;
+		};
+		
+		return HasMany;
 	}()),
 
 	SeaORM = function SeaORM($resource, settings) {
@@ -323,11 +351,19 @@ var SeaORM = (function (angular) {
 		};
 		
 		this.belongsTo = function (model) {
-			return function () {
+			return function (instance) {
 				if(typeof model === "string")
-					return new BelongsTo(Models[model]);
-				return new BelongsTo(model);
-			}
+					return new BelongsTo(Models[model], instance);
+				return new BelongsTo(model, instance);
+			};
+		};
+		
+		this.hasMany = function (model, related_field) {
+			return function (instance) {
+				if(typeof model === "string")
+					return new HasMany(Models[model], instance, related_field);
+				return new HasMany(model, instance, related_field);
+			};
 		};
 
 		if (typeof settings === 'object') this.settings(settings);
