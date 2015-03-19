@@ -7,6 +7,12 @@ Sea is an AngularJS framework to manage resources served by a REST service. It i
 
 Sea provides an easy way to define models and to interact with them. You can retrieve, create, update and delete resources in a clean and fast way
 
+### Installing
+
+```
+bower install sea
+```
+
 To use See framework you have to import the file on your page and inject it as a dependence of your application.
 As Sea framework uses the ngResource Angular module, you have to import it on your page too.
 
