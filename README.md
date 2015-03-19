@@ -112,7 +112,7 @@ There are tow more attributes that are able to be defined in the fields declarat
 The 'methods' attribute is an optional object that contain just methods that can be seen like a instance methods. All model instance have access to this methods;
 The 'url' attribute is optional and have to be a sttring representing the resource endpoint. By default, the Sea calculate the url as '/' + model_name.uncapitalize() + '/:id/'. The :id is replaced by the instance id when any instance operation is made. 
 
-The 'settings' parameter is used to configure the ngResource service to this specif model. We'll see mor details about it further ahead.
+The 'settings' parameter is used to configure the ngResource service to this specifc model. We'll see more details about it further ahead.
 
 ### $seaModel.belongsTo
 
@@ -139,7 +139,7 @@ Sea also is an ORM, and try to connect the models. Last see an example of how to
 
 In this example we have created a new model called Person, and we added a relational field 'belongs to' to it. It means that each person can belongs to a house.
 
-The $seaModel.belongsTo method return another method that instantiate a relational object, that manage this relationship. Is receive just one parameter that can be the Model it self or the name of a Model. Use the name instead the Model when you want to refer to an Model not declared yet or to refer to the own Model.
+The $seaModel.belongsTo method return another method that instantiate a relational object that manage this relationship. It receives just one parameter that can be the Model it self or the name of a Model. Use the name instead the Model when you want to refer to a Model not declared yet or to refer to the own Model.
 
 Let's see some example of how to use this field
 
@@ -204,7 +204,7 @@ As the relational field is lasy loaded, if you want to access it inside controll
 
 There is the get and set method for all Model instance, and it works for any field, but is more convenient to use the dot syntax, unless in the case to access a relational field, as we saw on the above example.
 
-The get method can receive more two parameters that should be callback functions, but this funcions are just used for relational fields. If the relational field was already loaded, then the success callback will be called immediately. If the relational field was not loaded, the the get method will return an empty Model instance and call the success callback with the filled instance after the data load.
+The get method can receive more two parameters that should be callback functions, but this functions are just used for relational fields. If the relational field was already loaded, then the success callback will be called immediately. If the relational field was not loaded, the get method will return an empty Model instance and call the success callback with the filled instance after the data load.
 
 ### $seaModel.hasMany
 
@@ -239,3 +239,5 @@ Easy. isn't it?
 $seaModel.hasMany method has to receive two parameters, the Model or Model name, and the related field.
 
 The related field indicates which field in the Person model will be used to connect the Models. So, when you ask by persons of a house, SeaModel will query the persons by the 'house' attribute.
+
+The 'persons' field will be an array of Person instances.
