@@ -99,10 +99,10 @@ var SeaORM = (function (angular) {
 			return JSON.stringify(this.toJS());
 		};
 		
-		SeaModel.prototype.get = function (field) {
+		SeaModel.prototype.get = function (field, success_cb, error_cb) {
 			if (typeof field === 'string' && _private[this._id].fields[field] !== undefined) {
 				if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
-					return _private[this._id].fields[field].get();
+					return _private[this._id].fields[field].get(success_cb, error_cb);
 				}
 				return _private[this._id].fields[field];
 			}
@@ -131,22 +131,22 @@ var SeaORM = (function (angular) {
 			}
 		};
 		
-		SeaModel.prototype.load = function (successCB, erroCB) {
+		SeaModel.prototype.load = function (success_cb, error_cb) {
 			var self = this;
 			_private[this._id].resourceObject = this._resource.get( { id: this.id }, function (value, responseHeaders) {
 				self.set(value);
 
-				if(typeof successCB === 'function'){
-					successCB(self, responseHeaders);
+				if(typeof success_cb === 'function'){
+					success_cb(self, responseHeaders);
 				}
 			}, function (httpResponse) {
-				if(typeof erroCB === 'function') {
-					erroCB(httpResponse);
+				if(typeof error_cb === 'function') {
+					error_cb(httpResponse);
 				}
 			});
 		};
 		
-		SeaModel.prototype.save = function (successCB, erroCB) {
+		SeaModel.prototype.save = function (success_cb, error_cb) {
 			var self = this;
 			if(!this.isLoaded) {
 				var js = this.toJS();
@@ -156,29 +156,29 @@ var SeaORM = (function (angular) {
 				_private[this._id].resourceObject = new this._resource(js);
 			}
 
-			var _successCB = function (value, responseHeaders) {
+			var _success_cb = function (value, responseHeaders) {
 				self.set(_private[self._id].resourceObject);
 
-				if(typeof successCB === 'function') {
-					successCB(self, responseHeaders);
+				if(typeof success_cb === 'function') {
+					success_cb(self, responseHeaders);
 				}
 			},
-			_erroCB = function (httpResponse) {
-				if(typeof erroCB === 'function') {
-					erroCB(httpResponse);
+			_error_cb = function (httpResponse) {
+				if(typeof error_cb === 'function') {
+					error_cb(httpResponse);
 				}
 			};
 
 			if(this.isNew) {
-				_private[this._id].resourceObject.$create(_successCB, _erroCB);
+				_private[this._id].resourceObject.$create(_success_cb, _error_cb);
 			} else {
-				_private[this._id].resourceObject.$update(_successCB, _erroCB);
+				_private[this._id].resourceObject.$update(_success_cb, _error_cb);
 			}
 
 			return self;
 		};
 		
-		SeaModel.prototype.remove = function (successCB, erroCB) {
+		SeaModel.prototype.remove = function (success_cb, error_cb) {
 			var self = this;
 			if(!this.isNew) {
 				if(!this.isLoaded){
@@ -186,12 +186,12 @@ var SeaORM = (function (angular) {
 				}
 
 				_private[this._id].resourceObject.$remove(function (value, responseHeaders) {
-					if(typeof successCB === 'function') {
-						successCB(self, responseHeaders);
+					if(typeof success_cb === 'function') {
+						success_cb(self, responseHeaders);
 					}
 				}, function (httpResponse) {
-					if(typeof erroCB === 'function') {
-						erroCB(httpResponse);
+					if(typeof error_cb === 'function') {
+						error_cb(httpResponse);
 					}
 				});
 			}
@@ -207,7 +207,7 @@ var SeaORM = (function (angular) {
 			this.instance = instance;
 		}
 		
-		Relational.prototype.get = function () { }
+		Relational.prototype.get = function (success_cb, error_cb) { }
 		Relational.prototype.set = function (v) { };
 		Relational.prototype.toJS = function () { };
 		
@@ -224,9 +224,12 @@ var SeaORM = (function (angular) {
 			return this.object.id;
 		};
 		
-		BelongsTo.prototype.get = function () {		
-			if(this.object && !this.object.isNew && !this.object.isLoaded)
-				this.object.load();
+		BelongsTo.prototype.get = function (success_cb, error_cb) {
+			if(this.object && !this.object.isNew && !this.object.isLoaded) {
+				this.object.load(success_cb, error_cb);
+			} else {
+				if (typeof success_cb === 'function') success_cb(this.object);
+			}
 			return this.object;
 		};
 
@@ -248,6 +251,32 @@ var SeaORM = (function (angular) {
 		var HasMany = function (model, instance, related_field) {
 			Relational.call(this, model, instance);
 			this.related_field = related_field;
+			this.isLoaded = false;
+			this.loading_success_cb = [];
+			this.loading_error_cb = [];
+		};
+
+		HasMany.prototype.execute_success_cb = function (value, responseHeaders) {
+			for(var i = 0; i < this.loading_success_cb.length; i++) {
+				this.loading_success_cb[i](value, responseHeaders);
+			}
+			this.loading_success_cb = [];
+			this.loading_error_cb = [];
+		};
+		HasMany.prototype.execute_error_cb = function (httpResponse) {
+			for(var i = 0; i < this.loading_error_cb.length; i++) {
+				this.loading_error_cb[i](httpResponse);
+			}
+			this.loading_error_cb = [];
+			this.loading_error_cb = [];
+		};
+		HasMany.prototype.register_callbacks = function (success_cb, error_cb) {
+			if(typeof success_cb === 'function') {
+				this.loading_success_cb.push(success_cb);
+			}
+			if(typeof success_cb === 'function') {
+				this.loading_error_cb.push(error_cb);
+			}
 		};
 		
 		HasMany.prototype.toJS = function () {
@@ -259,13 +288,26 @@ var SeaORM = (function (angular) {
 			return ids;
 		};
 		
-		HasMany.prototype.get = function () {
-			if(!this.object) {
+		HasMany.prototype.get = function (success_cb, error_cb) {
+			var self = this;
+			if(!self.object) {
 				var params = {};
-				params[this.related_field] = this.instance.id;
-				this.object = this.model.query(params);
+				params[self.related_field] = self.instance.id;
+				self.object = self.model.query(params, function (value, responseHeaders) {
+					self.isLoaded = true;
+					self.execute_success_cb(value, responseHeaders)
+				}, function (httpResponse) {
+					self.execute_errors_cb(httpResponse);
+				});
 			}
-			return this.object;
+			
+			self.register_callbacks(success_cb, error_cb);
+
+			if(self.isLoaded) {
+				self.execute_success_cb(self.object);
+			}
+			
+			return self.object;
 		};
 		
 		return HasMany;
