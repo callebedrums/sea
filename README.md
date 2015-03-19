@@ -51,9 +51,9 @@ Let's see an example of how to define a model.
 } (angular));
 ```
 
-In this example we have defined a angular factory called 'House' that returns our model, which has four attributes and two methods.
+In this example we have defined an angular factory called 'House' that returns our model, which has four attributes and two methods.
 
-Now, lat's use our new model.
+Now, let's use our new model.
 
 ```
 (function (angular) {
@@ -102,23 +102,23 @@ Now, lat's use our new model.
 
 ### $seaModel.newModel
 
-$seaModel.newModel is the method called to define a new model and its prototype is `$seaModel.newModel(object declaration, [object settings])`. the first parameter is the model declaration object, which have to define two required attributes, 'name' and 'fields'.
+$seaModel.newModel is the method called to define a new model and its prototype is `$seaModel.newModel(object declaration, [object settings])`. the first parameter is the Model declaration object, which has to define two required attributes, 'name' and 'fields'.
 
-The 'name' attribute is obviously the model name. It is required because the framework use it to manage and reference the model internally. It is also used to create relationships, as we'll see further ahead.
+The 'name' is the Model name. It is required because the framework uses it to manage and reference the model internally. It is also used to create relationships, as we will see ahead.
 
-The 'fields' attribute is obviously the fields of our model. It can contain how many fields as you want, and each field can be any primitive type or functions, but they can never be an object. If a field is defined as a function, it have to return a primitive value that will be assigned to field definitely when a new model instance is instantiated.
+The 'fields' attribute is our Model fields. It can contain as many fields as you want, and each field can be any primitive type or functions, but they can never be an object. If a field is defined as a function, it has to return a primitive value that will be definitely assigned to the field when a new model instance is instantiated.
 
-There are tow more attributes that are able to be defined in the fields declaration objects, 'methods' and 'url';
+There are two more attributes that can be defined in the fields declaration objects, 'methods' and 'url';
 
-The 'methods' attribute is an optional object that contain just methods that can be seen like a instance methods. All model instance have access to this methods;
+The 'methods' attribute is an optional object which contains only methods, and they can be considered instance methods. All model instances have access to these methods;
 
-The 'url' attribute is optional and has to be a sttring representing the resource endpoint. By default, Sea calculates the url as '/' + model_name.uncapitalize() + '/:id/'. The :id is replaced by the instance id when any instance operation is made. 
+The 'url' attribute is optional and has to be a string representing the resource endpoint. By default, Sea calculates the url as '/' + model_name.uncapitalize() + '/:id/'. The :id is replaced by the instance id when any instance operation is performed. 
 
-The 'settings' parameter is used to configure the ngResource service to this specifc model. We'll see more details about it further ahead.
+The 'settings' parameter is used to configure the ngResource service to this specifc model. We will see more details about it ahead.
 
 ### $seaModel.belongsTo
 
-Sea also is an ORM, and try to connect the models. Last see an example of how to connect one model wich other:
+Sea also is an ORM, and tries to connect the models. Let's see an example of how to connect one model with other:
 
 ```
 (function () {
@@ -139,11 +139,11 @@ Sea also is an ORM, and try to connect the models. Last see an example of how to
 } (angular));
 ```
 
-In this example we have created a new model called Person, and we added a relational field 'belongs to' to it. It means that each person can belongs to a house.
+In this example we have created a new model called Person, and we added a relational field 'belongs to' to it. It means that each person can belong to a house.
 
-The $seaModel.belongsTo method return another method that instantiate a relational object that manage this relationship. It receives just one parameter that can be the Model it self or the name of a Model. Use the name instead the Model when you want to refer to a Model not declared yet or to refer to the own Model.
+The $seaModel.belongsTo method returns another method that instantiate a relational object that manages this relationship. It receives just one parameter that can be the Model itself or the name of a Model. Use the name instead the Model when you want to refer to a Model not yet declared or to refer to the Model itself.
 
-Let's see some example of how to use this field
+Let's see an example of how to use this field
 
 ```
 (function (angular) {
@@ -178,9 +178,9 @@ Let's see some example of how to use this field
 </div>
 ```
 
-Here we have instantiated a new Person and set the house to 3. It means that the house with id equals to 3 will be loaded to the field. But don't worry, Sea do a lazy load of relational attributes. When angular render the template and ask for the house attribute, the Sea will return an empty instance of House and will request the House data.
+Here we have a new Person instantiated setting the house to 3. It means that the house with id equals to 3 will be loaded to the field. But do not worry, Sea do a lazy load of relational attributes. When angular renders the template and asks for the house attribute, Sea will return an empty instance of House and will request the House data.
 
-As the relational field is lasy loaded, if you want to access it inside controller, you can use the Model instance method get, like in the following example:
+As the relational field is lazy loaded, if you want to access its inner controller, you can use the Model instance method get, like in the following example:
 
 ```
 (function (angular) {
@@ -204,17 +204,17 @@ As the relational field is lasy loaded, if you want to access it inside controll
 } (angular));
 ```
 
-There is the get and set method for all Model instance, and it works for any field, but is more convenient to use the dot syntax, unless in the case to access a relational field, as we saw on the above example.
+There is the get and set method for all Model instances, and it works for any field, but it is more convenient to use the dot syntax, unless in case of accessing a relational field, as we previously exemplified.
 
-The get method can receive more two parameters that should be callback functions, but this functions are just used for relational fields. If the relational field was already loaded, then the success callback will be called immediately. If the relational field was not loaded, the get method will return an empty Model instance and call the success callback with the filled instance after the data load.
+The get method can receive more two parameters that should be callback functions, but these functions are only used for relational fields. If the relational field was already loaded, then the success callback will be called immediately. If the relational field was not loaded, the get method will return an empty Model instance and call the success callback with the filled instance after the data load.
 
 ### $seaModel.hasMany
 
-We sow how to connect the Person model to the House model. But if i want have access to the person list that live in the same house?
+We saw how to connect the Person model to the House model. But what if i want to have access to the list of people how are living in the same house?
 
 We have to connect the House model with the Person model by the $seaModel.hasMany method.
 
-Again, an example is the bet explanation:
+Again, an example is the best explanation:
 
 ```
 (function () {
@@ -228,7 +228,7 @@ Again, an example is the bet explanation:
                 color: "",
                 doors: 0,
                 windows: 0,
-                persons: $seaModel.hasMany('Person', 'house')
+                people: $seaModel.hasMany('Person', 'house')
             },
             methods: {...}
         });
@@ -240,6 +240,6 @@ Easy. isn't it?
 
 $seaModel.hasMany method has to receive two parameters, the Model or Model name, and the related field.
 
-The related field indicates which field in the Person model will be used to connect the Models. So, when you ask by persons of a house, SeaModel will query the persons by the 'house' attribute.
+The related field indicates which field in the Person model will be used to connect the Models. So, when you require to access the list of people in a house, SeaModel will query the people by the 'house' attribute.
 
-The 'persons' field will be an array of Person instances.
+The 'people' field will be an array of Person instances.
