@@ -5,10 +5,10 @@ Sea - AngularJS REST/ORM framework
 
 Sea is an AngularJS framework to manage resources served by a REST service. It is also an ORM where you can define models and their relationships with other models.
 
-Sea provide a easy way to define models and to interact with them. You can retrieve, create, update and delete resources in a clean and fast way
+Sea provides an easy way to define models and to interact with them. You can retrieve, create, update and delete resources in a clean and fast way
 
-To use the see framework you have to import the file in your page and inject it as a dependence of your application.
-As Sea framework use the ngResource Angular module, you have to import it on your page too.
+To use See framework you have to import the file on your page and inject it as a dependence of your application.
+As Sea framework uses the ngResource Angular module, you have to import it on your page too.
 
 ```
 <script type="text/javascript" src="path/to/angular.min.js"></script>
@@ -21,7 +21,7 @@ As Sea framework use the ngResource Angular module, you have to import it on you
 
 # Model
 
-One model is a Class that represent your resource, and usually represents one of the application model.
+One model is a Class that represents your resource, and usually represents one of the application model.
 
 Let's see an example of how to define a model.
 
@@ -51,7 +51,7 @@ Let's see an example of how to define a model.
 } (angular));
 ```
 
-In this example we have defined a angular factory called 'House' that return our model, which has four attributes and two methods.
+In this example we have defined a angular factory called 'House' that returns our model, which has four attributes and two methods.
 
 Now, lat's use our new model.
 
@@ -109,8 +109,10 @@ The 'name' attribute is obviously the model name. It is required because the fra
 The 'fields' attribute is obviously the fields of our model. It can contain how many fields as you want, and each field can be any primitive type or functions, but they can never be an object. If a field is defined as a function, it have to return a primitive value that will be assigned to field definitely when a new model instance is instantiated.
 
 There are tow more attributes that are able to be defined in the fields declaration objects, 'methods' and 'url';
+
 The 'methods' attribute is an optional object that contain just methods that can be seen like a instance methods. All model instance have access to this methods;
-The 'url' attribute is optional and have to be a sttring representing the resource endpoint. By default, the Sea calculate the url as '/' + model_name.uncapitalize() + '/:id/'. The :id is replaced by the instance id when any instance operation is made. 
+
+The 'url' attribute is optional and has to be a sttring representing the resource endpoint. By default, Sea calculates the url as '/' + model_name.uncapitalize() + '/:id/'. The :id is replaced by the instance id when any instance operation is made. 
 
 The 'settings' parameter is used to configure the ngResource service to this specifc model. We'll see more details about it further ahead.
 
