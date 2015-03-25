@@ -354,7 +354,7 @@ var SeaORM = (function (angular) {
 			
 			angular.extend(NewModel.prototype, SeaModel.prototype);
 			
-			Object.defineProperty(NewModel.prototype, 'url', { value: url, writable: false, enumerable: false, configurable: false });
+			Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
 			
 			NewModel.query = function (params, successCB, erroCB) {
 				if(typeof params === 'function') {
