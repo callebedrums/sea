@@ -373,7 +373,7 @@ var SeaORM = (function (angular) {
 						successCB(result, responseHeaders);
 					}
 				}, function (httpResponse) {
-					if(typeof erroCB) {
+					if(typeof erroCB == 'function' ) {
 						erroCB(httpResponse);
 					}
 				});
