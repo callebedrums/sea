@@ -321,8 +321,7 @@ var SeaORM = (function (angular) {
 		};
 
 		HasMany.prototype.set = function (value) {
-			if (!isNaN(value)) {
-				value = parseInt(value);
+			if (typeof value === 'number') {
 				if(!this.object) {
 					this.object = [];
 					this.isLoaded = true;
