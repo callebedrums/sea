@@ -287,6 +287,16 @@ var SeaORM = (function (angular) {
 			}
 			return ids;
 		};
+
+		HasMany.prototype.has_object = function (id) {
+			if(!this.object) return false;
+
+			for(var i = 0; i < this.object.length; i++) {
+				if(this.object[i].id == id) return true;
+			}
+
+			return false;
+		};
 		
 		HasMany.prototype.get = function (success_cb, error_cb) {
 			var self = this;
@@ -308,6 +318,39 @@ var SeaORM = (function (angular) {
 			}
 			
 			return self.object;
+		};
+
+		HasMany.prototype.set = function (value) {
+			if (!isNaN(value)) {
+				value = parseInt(value);
+				if(!this.object) {
+					this.object = [];
+					this.isLoaded = true;
+				}
+				if (!this.has_object(value)) {
+					this.object.push(new this.model({id: value}));
+				}
+
+			} else if (value instanceof this.model) {
+				if (!this.has_object(value.id)) {
+					this.object.push(value);
+				}
+
+			} else if (value instanceof Array) {
+				var new_object = [];
+				for(var i = 0; i < value.length; i++) {
+					if(value[i] instanceof this.model && !this.has_object(value[i].id)) {
+						new_object.push(value[i]);
+					}
+				}
+				this.object = new_object;
+				this.isLoaded = true;
+
+			} else if (value == null) {
+				this.object = null;
+				this.isLoaded = false;
+
+			}
 		};
 		
 		return HasMany;
@@ -354,7 +397,7 @@ var SeaORM = (function (angular) {
 			
 			angular.extend(NewModel.prototype, SeaModel.prototype);
 			
-			Object.defineProperty(NewModel.prototype, 'url', { value: url, writable: false, enumerable: false, configurable: false });
+			Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
 			
 			NewModel.query = function (params, successCB, erroCB) {
 				if(typeof params === 'function') {
