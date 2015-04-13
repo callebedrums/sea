@@ -331,6 +331,10 @@ var SeaORM = (function (angular) {
 				}
 
 			} else if (value instanceof this.model) {
+				if(!this.object) {
+					this.object = [];
+					this.isLoaded = true;
+				}
 				if (!this.has_object(value.id)) {
 					this.object.push(value);
 				}
