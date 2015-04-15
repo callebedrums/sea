@@ -1,0 +1,7 @@
+site_name: Sea
+site_author: Callebe Gomes, callebedrums@gmail.com
+site_description: SeaORM, SeaModel, Sea Framework, REST Service, ORM REST Service
+repo_url: https://github.com/callebedrums/sea
+pages:
+- [index.md, Home]
+- [about.md, About]
