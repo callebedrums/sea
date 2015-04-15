@@ -18,6 +18,8 @@ and the sql commannds, Sea abstracs a REST service and the Ajax calls.
 - A conventional ORM also manages the model's relationships. Sea also tries managing
 the model's relationships, connecting the instances, and loading the data automatically.
 
+***
+
 # Contributors
 
 Sea has only one contributor now, but you are free to make changes and improve this awesome tool.

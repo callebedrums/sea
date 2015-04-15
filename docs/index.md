@@ -6,6 +6,8 @@ Sea is an AngularJS framework to manage resources served by a REST service. It i
 
 Sea provides an easy way to define models and to interact with them. You can retrieve, create, update and delete resources in a clean and fast way
 
+***
+
 ## Installing
 
 You can download the sea package from [github](https://github.com/callebedrums/sea), or install it from bower
@@ -21,7 +23,9 @@ As Sea framework uses the ngResource Angular module, you have to import it on yo
 	<script type="text/javascript">
 		var myApp = angular.module("myApp", ["seaModel"]);
 	</script>
-    
+
+***
+
 ## Model
 
 One model is a Class that represents your resource, and usually represents one of the application model.
