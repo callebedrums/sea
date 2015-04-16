@@ -11,7 +11,9 @@ Over this page, we will see which configurations cam be changed and what is thei
 ## $seaModelProvider
 
 As a AngularJs module, Sea provides a provider. This provider has only one method
-that should be called to configure the Global Settings of the Sea module. 
+that should be called to configure the Global Settings of the Sea module.
+
+This settings also can be changed for each model definition. See [Model](/model/) for more informations.
 
 ### .settings(defSettings)
 
@@ -30,9 +32,9 @@ default:
 		return '/' + name.uncapitalize() + '/:id/';
 	}
 
-This attribute define the default url for each model. When a new model is created, the Sea consults this attribute to define which url will be used for this model.
+This attribute define the default URL for each model. When a new model is created, the Sea consults this attribute to define which URL will be used for this model.
 
-If this attribute is setted as a function, Sea calls it passing the model name as parameter and uses the returned value as url. If it is a string, Sea just uses it.
+If this attribute is setted as a function, Sea calls it passing the model name as parameter and uses the returned value as URL. If it is a string, Sea just uses it.
 
 &nbsp;
 
@@ -42,7 +44,7 @@ If this attribute is setted as a function, Sea calls it passing the model name a
 - optional: `yes`
 - default: `''`
 
-This attribute define the default prefix of the url for all models. This attribute is prepended to the url attribute.
+This attribute define the default prefix of the URL for all models. This attribute is prepended to the URL attribute.
 
 It is useful when your api is exposed on a sub-path of your domain, e.g. my.domain.com/api/. On this case, the urlPrefix attribute should be setted as '/api'.
 
@@ -68,7 +70,13 @@ This attribute is used as the *action* parameter of the [$resource](https://docs
 
 For mor details, see the [$resource](https://docs.angularjs.org/api/ngResource/service/$resource) documentation
 
-&nbsp;
+***
+
+## Calculating the URL
+
+As we previously saw, there are two attributes related to the URL, `url` and `urlPrefix`.
+Sea uses this two attributes to calculate the model's URL, and it simply concatenates this two values.
+Therefore, the resulting URL always will be equals `urlPrefix + url`.
 
 ## Example
 
