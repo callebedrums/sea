@@ -41,7 +41,7 @@ As a self-taught developer, he like to learn new technologies, tools and languag
 If he has to learn something, he'll learn fast, always looking for the best practices.
 
 On free time, he likes reading a fiction book, watching movies and tv series,
-expending some time playing with his daughter and coding some thing.
+expending some time playing with his daughter and coding somethings.
 
 
 

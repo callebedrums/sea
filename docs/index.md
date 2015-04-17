@@ -112,7 +112,8 @@ We can define relationship between our models
 	(function () {
 		"use strict";
 		
-		angular.module("myApp").factory("Person", ["$seaModel", "House", function ($seaModel, House) {
+		angular.module("myApp").factory("Person", ["$seaModel", "House",
+		function ($seaModel, House) {
 		    return $seaModel.newModel({
 		        name: "Person",
 		        fields: {
@@ -140,7 +141,7 @@ Let's see an example of how to use this field
 		    	lastname: 'Gomes',
 		    	age: 26,
 		    	house: 3 //> i'm setting the Callebe's house as he house of id 3;
-		    }); 
+		    });
 		    
 		    $scope.person.house = 4; //> moving to another house :)
 		    

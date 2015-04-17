@@ -15,7 +15,7 @@ that should be called to configure the Global Settings of the Sea module.
 
 This settings also can be changed for each model definition. See [Model](/model/) for more informations.
 
-### .settings(defSettings)
+### `.settings(defSettings)`
 
 The .settings(defSettings) method receives only one parameter, that should be an object with the following attributes:
 
