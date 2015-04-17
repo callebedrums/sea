@@ -128,6 +128,7 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 - type: `string`
 
+&nbsp;
 
 # Model Class
 
@@ -138,6 +139,8 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 &nbsp;
 
 `.get(id [, success_cb [, error_cb]])`
+
+&nbsp;
 
 # Model Instance
 
