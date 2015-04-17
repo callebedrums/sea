@@ -26,7 +26,7 @@ As Sea framework uses the ngResource Angular module, you have to import it on yo
 
 ***
 
-## Model
+## Quickstart
 
 One model is a Class that represents your resource, and usually represents one of the application model.
 

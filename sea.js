@@ -402,10 +402,10 @@ var SeaORM = (function (angular) {
 			
 			Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
 			
-			NewModel.query = function (params, successCB, erroCB) {
+			NewModel.query = function (params, success_cb, error_cb) {
 				if(typeof params === 'function') {
-					erroCB = successCB;
-					successCB = params;
+					error_cb = success_cb;
+					success_cb = params;
 					params = {};
 				}
 				var result = [],
@@ -415,21 +415,21 @@ var SeaORM = (function (angular) {
 						obj = new NewModel(resources[i]);
 						result.push(obj);
 					}
-					if(typeof successCB == 'function'){
-						successCB(result, responseHeaders);
+					if(typeof success_cb == 'function'){
+						success_cb(result, responseHeaders);
 					}
 				}, function (httpResponse) {
-					if(typeof erroCB == 'function' ) {
-						erroCB(httpResponse);
+					if(typeof error_cb == 'function' ) {
+						error_cb(httpResponse);
 					}
 				});
 
 				return result;
 			};
 			
-			NewModel.get = function (id, successCB, erroCB) {
+			NewModel.get = function (id, success_cb, error_cb) {
 				var instance = new NewModel({id: id});
-				instance.load(successCB, erroCB);
+				instance.load(success_cb, error_cb);
 				return instance;
 			};
 			

@@ -24,7 +24,7 @@ the url, consult [Calculating the url](configuration/#calculating-the-url).
 
 To declare a new Sea Model, use the `newModel` method:
 
-### `$seaModel.newModel(declaration [, settings])`
+## `$seaModel.newModel(declaration [, settings])`
 
 This method returns a Sea Model Class that has methods to access the resources and
 can be instantiated to represent a single resource.
@@ -62,8 +62,7 @@ It receives two parameters:
 		- type: `string|function`
 		- optional: `yes`
 		- description: Define de Model URL. This parameters does not affect the Global Setting, only the Model setting.
-		For more details, consult [$seaModelProvider](/configuration/#seamodelprovider) and [calculating the URL](/configuration/#calculating-the-url)
-		
+		For more details, consult [$seaModelProvider](/configuration/#seamodelprovider) and [calculating the URL](/configuration/#calculating-the-url)	
 
 &nbsp;
 
@@ -74,6 +73,8 @@ It receives two parameters:
 - description: Set the Model setting, without affect the Global Setting.
 This object has the same attributes of the parameter passed to `$seaModelProvider.settings()` method.
 For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
+
+&nbsp;
 
 ### Example
 
@@ -103,10 +104,92 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 # Relationship
 
-## Belongs To
+## `$seaModel.belongsTo(model)`
 
-## Has Many
+&nbsp;
+
+`model`
+
+- type: `string|Sea Model`
+
+&nbsp;
+
+## `$seaModel.hasMany(model, related_field)`
+
+&nbsp;
+
+`model`
+
+- type: `string|Sea Model`
+
+&nbsp;
+
+`related_field`
+
+- type: `string`
+
 
 # Model Class
 
+&nbsp;
+
+`.query([params] [, success_cb [, error_cb]])`
+
+&nbsp;
+
+`.get(id [, success_cb [, error_cb]])`
+
 # Model Instance
+
+&nbsp;
+
+`.<field_name>`
+
+&nbsp;
+
+`._url`
+
+&nbsp;
+
+`.isNew`
+
+&nbsp;
+
+`.isLoaded`
+
+&nbsp;
+
+`.modelName`
+
+&nbsp;
+
+`.toJS()`
+
+&nbsp;
+
+`.toJSON()`
+
+&nbsp;
+
+`.get(field [, success_cb [, error_cb]])`
+
+&nbsp;
+
+`.set(field [, value])`
+
+&nbsp;
+
+`.setFields(obj)`
+
+&nbsp;
+
+`.load([success_cb [, error_cb]])`
+
+&nbsp;
+
+`.save([success_cb [, error_cb]])`
+
+&nbsp;
+
+`.remove([success_cb [, error_cb]])`
+
