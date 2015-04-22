@@ -24,7 +24,7 @@ the url, consult [Calculating the url](configuration/#calculating-the-url).
 
 To declare a new Sea Model, use the `newModel` method:
 
-## `$seaModel.newModel(declaration [, settings])`
+## `$seaModel.newModel (declaration [, settings])`
 
 This method returns a Sea Model Class that has methods to access the resources and
 can be instantiated to represent a single resource.
@@ -102,7 +102,24 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 		}])
 	} (angular));
 
+On this example, we defined a new Sea model named 'House'. As the Sea was designed
+to work with [AngularJs](https://angularjs.org/), we defined and returned the model
+in a angular [Factory](https://docs.angularjs.org/guide/providers), so we can inject
+it as dependency in any controller or service we  have declared.
+
+The 'House' model has four instance attributes and two instance methods.
+
+Its URL will be `http://myDomain.com/house/:id/`
+
+&nbsp;
+
 # Relationship
+
+When you are defining a new model, Sea provides a way to you connect two or more
+models. You can define relationships.
+
+For now, Sea provides two relationship kinds: `belongsTo`, connects an instance
+to another single instance; `hasMany`, connects an instance to one or more instances.
 
 ## `$seaModel.belongsTo(model)`
 
@@ -110,7 +127,7 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 `model`
 
-- type: `string|Sea Model`
+- type: `string|<Sea Model>`
 
 &nbsp;
 
@@ -120,7 +137,7 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 `model`
 
-- type: `string|Sea Model`
+- type: `string|<Sea Model>`
 
 &nbsp;
 
@@ -146,6 +163,10 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 &nbsp;
 
+`.id`
+
+&nbsp;
+
 `.<field_name>`
 
 &nbsp;
@@ -163,6 +184,10 @@ For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 &nbsp;
 
 `.modelName`
+
+&nbsp;
+
+`.<method_name>()`
 
 &nbsp;
 
