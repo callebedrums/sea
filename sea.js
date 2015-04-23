@@ -15,11 +15,12 @@ var SeaORM = (function (angular) {
 	prefixedURL = function (settings, declaration){
 		var prefix = settings.urlPrefix,
 			url = '';
-		if(declaration.url){
+		if (declaration.url) {
 			url = declaration.url;
 		} else {
 			url = typeof settings.url === 'function' ? settings.url(declaration.name): settings.url;
 		}
+		url = url.replace(/:id/g, declaration.masterKey);
 		return prefix + url;
 	},
 	
@@ -43,22 +44,24 @@ var SeaORM = (function (angular) {
 		object_id = 1;
 	
 		var SeaModel = function (declaration, resource, data) {
-			var self = this;
+			var self = this,
+				initial = {};
+			initial[self.masterKey] = 0;
 			
 			Object.defineProperty(self, '_id', { value: object_id++, writable: false, enumerable: false, configurable: false });
 			Object.defineProperty(self, '_resource', { value: resource, writable: false, enumerable: false, configurable: false });
 			
 			_private[this._id] = {
-				fields: angular.extend({ id:0 }, declaration.fields),
+				fields: angular.extend(initial, declaration.fields),
 				resourceObject: null
 			};
 			
 			Object.defineProperty(self, 'isNew', {
-				get: function () { return _private[self._id].fields.id == 0; }, enumerable: false, configurable: false
+				get: function () { return _private[self._id].fields[self.masterKey] == 0; }, enumerable: false, configurable: false
 			});
 
 			Object.defineProperty(self, 'isLoaded', {
-				get: function () { return _private[self._id].fields.id != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
+				get: function () { return _private[self._id].fields[self.masterKey] != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
 			});
 			
 			Object.defineProperty(self, 'modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
@@ -79,7 +82,7 @@ var SeaORM = (function (angular) {
 			if(typeof data === 'object'){
 				self.setFields(data);
 			} else if(typeof data === 'number' && parseInt(data)) {
-				self.set('id', parseInt(data));
+				self.set(this.masterKey, parseInt(data));
 			}
 		};
 		
@@ -133,7 +136,7 @@ var SeaORM = (function (angular) {
 		
 		SeaModel.prototype.load = function (success_cb, error_cb) {
 			var self = this;
-			_private[this._id].resourceObject = this._resource.get( { id: this.id }, function (value, responseHeaders) {
+			_private[this._id].resourceObject = this._resource.get( { id: this[this.masterKey] }, function (value, responseHeaders) {
 				self.set(value);
 
 				if(typeof success_cb === 'function'){
@@ -151,7 +154,7 @@ var SeaORM = (function (angular) {
 			if(!this.isLoaded) {
 				var js = this.toJS();
 				if(this.isNew){
-					delete js.id;
+					delete js[this.masterKey];
 				}
 				_private[this._id].resourceObject = new this._resource(js);
 			}
@@ -221,7 +224,7 @@ var SeaORM = (function (angular) {
 		
 		BelongsTo.prototype.toJS = function () {
 			if(!this.object) return null;
-			return this.object.id;
+			return this.object[this.model.masterKey];
 		};
 		
 		BelongsTo.prototype.get = function (success_cb, error_cb) {
@@ -236,8 +239,10 @@ var SeaORM = (function (angular) {
 		BelongsTo.prototype.set = function (value) {
 			if (value != null && typeof value == 'number') {
 				value = parseInt(value);
-				if(!isNaN(value) && (this.object == null || this.object.id != value)) {
-					this.object = new this.model({id: value});
+				if(!isNaN(value) && (this.object == null || this.object[this.model.masterKey] != value)) {
+					var obj = {};
+					obj[this.model.masterKey] = value;
+					this.object = new this.model(obj);
 				}
 			} else if (value == null || value instanceof this.model) {
 				this.object = value;
@@ -283,7 +288,7 @@ var SeaORM = (function (angular) {
 			if(!this.object) return null;
 			var ids = [];
 			for(var i = 0; i < this.object.length; i++) {
-				ids.push(this.object[i].id);
+				ids.push(this.object[i][this.model.masterKey]);
 			}
 			return ids;
 		};
@@ -292,7 +297,7 @@ var SeaORM = (function (angular) {
 			if(!this.object) return false;
 
 			for(var i = 0; i < this.object.length; i++) {
-				if(this.object[i].id == id) return true;
+				if(this.object[i][this.model.masterKey] == id) return true;
 			}
 
 			return false;
@@ -302,7 +307,7 @@ var SeaORM = (function (angular) {
 			var self = this;
 			if(!self.object) {
 				var params = {};
-				params[self.related_field] = self.instance.id;
+				params[self.related_field] = self.instance[this.model.masterKey];
 				self.object = self.model.query(params, function (value, responseHeaders) {
 					self.isLoaded = true;
 					self.execute_success_cb(value, responseHeaders)
@@ -327,7 +332,9 @@ var SeaORM = (function (angular) {
 					this.isLoaded = true;
 				}
 				if (!this.has_object(value)) {
-					this.object.push(new this.model({id: value}));
+					var obj = {};
+					obj[this.model.masterKey] = value;
+					this.object.push(new this.model(obj));
 				}
 
 			} else if (value instanceof this.model) {
@@ -335,14 +342,14 @@ var SeaORM = (function (angular) {
 					this.object = [];
 					this.isLoaded = true;
 				}
-				if (!this.has_object(value.id)) {
+				if (!this.has_object(value[this.model.masterKey])) {
 					this.object.push(value);
 				}
 
 			} else if (value instanceof Array) {
 				var new_object = [];
 				for(var i = 0; i < value.length; i++) {
-					if(value[i] instanceof this.model && !this.has_object(value[i].id)) {
+					if(value[i] instanceof this.model && !this.has_object(value[i][this.model.masterKey])) {
 						new_object.push(value[i]);
 					}
 				}
@@ -362,6 +369,7 @@ var SeaORM = (function (angular) {
 	SeaORM = function SeaORM($resource, settings) {
 		var self = this,
 		defaultSettings = {
+			masterKey: 'id',
 			urlPrefix: '',
 			url: function (name) {
 				return '/' + name.uncapitalize() + '/:id/';
@@ -388,9 +396,12 @@ var SeaORM = (function (angular) {
 			} else {
 				settings = defaultSettings;
 			}
+
+			declaration.masterKey = declaration.masterKey || settings.masterKey
 			
-			var url = prefixedURL(settings, declaration),
-			modelResource = $resource(url, {id: '@id'}, settings.methods);
+			var url = prefixedURL(settings, declaration), obj = {};
+			obj[declaration.masterKey] = '@' + declaration.masterKey;
+			var modelResource = $resource(url, obj, settings.methods);
 
 			var NewModel = function () {
 				var args = Array.prototype.slice.call(arguments);
@@ -401,11 +412,13 @@ var SeaORM = (function (angular) {
 			angular.extend(NewModel.prototype, SeaModel.prototype);
 			
 			Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
+			Object.defineProperty(NewModel.prototype, 'masterKey', { value: declaration.masterKey, writable: false, enumerable: false, configurable: false });
+			Object.defineProperty(NewModel, 'masterKey', { value: declaration.masterKey, writable: false, enumerable: false, configurable: false });
 			
-			NewModel.query = function (params, success_cb, error_cb) {
+			NewModel.query = function (params, successCB, erroCB) {
 				if(typeof params === 'function') {
-					error_cb = success_cb;
-					success_cb = params;
+					erroCB = successCB;
+					successCB = params;
 					params = {};
 				}
 				var result = [],
@@ -415,21 +428,23 @@ var SeaORM = (function (angular) {
 						obj = new NewModel(resources[i]);
 						result.push(obj);
 					}
-					if(typeof success_cb == 'function'){
-						success_cb(result, responseHeaders);
+					if(typeof successCB == 'function'){
+						successCB(result, responseHeaders);
 					}
 				}, function (httpResponse) {
-					if(typeof error_cb == 'function' ) {
-						error_cb(httpResponse);
+					if(typeof erroCB == 'function' ) {
+						erroCB(httpResponse);
 					}
 				});
 
 				return result;
 			};
 			
-			NewModel.get = function (id, success_cb, error_cb) {
-				var instance = new NewModel({id: id});
-				instance.load(success_cb, error_cb);
+			NewModel.get = function (id, successCB, erroCB) {
+				var obj = {};
+				obj[declaration.masterKey] = id;
+				var instance = new NewModel(obj);
+				instance.load(successCB, erroCB);
 				return instance;
 			};
 			
