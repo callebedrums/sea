@@ -120,34 +120,94 @@ models. You can define relationships.
 
 For now, Sea provides two relationship kinds: `belongsTo`, connects an instance
 to another single instance; `hasMany`, connects an instance to one or more instances.
+This relationships should be defined as fields of the models.
 
 ## `$seaModel.belongsTo(model)`
+
+This method returns a 'belongsTo' relationship. Each instance of this model will have
+a connection to another single instance of another model. This kind of relationship
+is usually used when the model has a foreign key to another model. On this case, Sea
+expects to receive an id from the server as the field value, however, when you access
+the field, you will see an instance of the connected model.
 
 &nbsp;
 
 `model`
 
 - type: `string|<Sea Model>`
+- description: model's name or model's class
+
+&nbsp;
+
+### Example
+
+	(function () {
+		"use strict";
+		
+		angular.module("myApp").factory("FlightAttendant", ["$seaModel", "Plane",
+		function ($seaModel, Plane) {
+		    return $seaModel.newModel({
+		        name: "FlightAttendant",
+		        fields: {
+		            name: "",
+		            age: "",
+		            plane: $seaModel.belongsTo(Plane),
+		        }
+		    });
+		}])
+	} (angular));
 
 &nbsp;
 
 ## `$seaModel.hasMany(model, related_field)`
 
+This method returns a 'hasMany' relationship. Each instance of this model will have a
+connection to many other instances of another model. This kind of relationship
+is usually used when the foreign key is in the connected model. On this case, Sea
+expects to receive an array of id's from the server as the field value, however, when
+you access the field, you will see an array of instances of the connected model.
+
 &nbsp;
 
 `model`
 
 - type: `string|<Sea Model>`
+- description: model's name or model's class
 
 &nbsp;
 
 `related_field`
 
 - type: `string`
+- description: the field of the connected model used to establish the relationship
+
+&nbsp;
+
+### Example
+
+	(function () {
+		"use strict";
+		
+		angular.module("myApp").factory("Plane", ["$seaModel",
+		function ($seaModel) {
+		    return $seaModel.newModel({
+		        name: "FlightAttendant",
+		        fields: {
+		            number: "",
+		            compay: "",
+		            crew: $seaModel.hasMany('FlightAttendant'),
+		        }
+		    });
+		}])
+	} (angular));
 
 &nbsp;
 
 # Model Class
+
+Each model is declared as a Class, because of this you can instantiate new objects using the 'new' keyword.
+
+A Model Class also have two class methods:
 
 &nbsp;
 

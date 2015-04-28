@@ -61,8 +61,6 @@ var SeaORM = (function (angular) {
 				get: function () { return _private[self._id].fields.id != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
 			});
 			
-			Object.defineProperty(self, 'modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
-			
 			for (var field in _private[this._id].fields) {
 				while(typeof _private[this._id].fields[field] == 'function'){
 					_private[this._id].fields[field] = _private[this._id].fields[field](this);
@@ -398,9 +396,11 @@ var SeaORM = (function (angular) {
 				SeaModel.apply(this, args);
 			};
 			
-			angular.extend(NewModel.prototype, SeaModel.prototype);
+			NewModel.prototype = Object.create(SeaModel.prototype);
+			NewModel.prototype.constructor = NewModel;
 			
 			Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
+			Object.defineProperty(NewModel.prototype, 'modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
 			
 			NewModel.query = function (params, success_cb, error_cb) {
 				if(typeof params === 'function') {
