@@ -25,6 +25,8 @@ As Sea framework uses the ngResource Angular module, you have to import it on yo
 </script>
 ```
 
+# [Read the Docs](http://sea.readthedocs.org/en/latest/)
+
 # Model
 
 One model is a Class that represents your resource, and usually represents one of the application model.
