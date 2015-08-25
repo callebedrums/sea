@@ -16,6 +16,8 @@ Sea also has the concepts of Models, Instances and Attributes.
 Over this document, you will see how to declare a Sea Model,
 how to connect models using relational attributes, and how to use this models.
 
+***
+
 # Declaring a Model
 
 A Sea Model represents a kind or type of resources provided by a REST Service.
@@ -113,6 +115,8 @@ Its URL will be `http://myDomain.com/house/:id/`
 
 &nbsp;
 
+***
+
 # Relationship
 
 When you are defining a new model, Sea provides a way to you connect two or more
@@ -203,9 +207,21 @@ you access the field, you will see an array of instances of the connected model.
 
 &nbsp;
 
+***
+
 # Model Class
 
-Each model is declared as a Class, because of this you can instantiate new objects using the 'new' keyword.
+Each model is declared as a Class, so you can instantiate new objects using the 'new' keyword.
+
+`new <modal_name>([data])`
+
+The constructor receives just one optional parameter `data` and returns the model instance.
+
+- `data`
+	- type: `object`
+	- description: The initial data of the instance
+
+&nbsp;
 
 A Model Class also have two class methods:
 
@@ -213,11 +229,49 @@ A Model Class also have two class methods:
 
 `.query([params] [, success_cb [, error_cb]])`
 
+This method is destinated to query on the server for model instances.
+It sends a GET request to the model endpoint and returns an array of model instances.
+As it is lazy load, the returned array will be empty, and it will be filled on the return of the request.
+Each field in the `params` object will compose the query string of the request.
+
+- `params`:
+	- type: `object`
+	- optional: `yes`
+	- description: An object with the filter parameters to compose the request query string
+- `success_cb`:
+	- type: `function(result, responseHeaders)`
+	- optional: `yes`
+	- description: The success callback to be called on the success response. It shall receive the populated array of instance and the HTTP response headers.
+- `error_cb`:
+	- type: `function(httpResponse)`
+	- optional: `yes`
+	- description: The error callback to be called on the error response. It shall receive the HTTP response.
+
 &nbsp;
 
 `.get(id [, success_cb [, error_cb]])`
 
+This method is destinated to retrieve only one single model instance from the server.
+It sends a GET request to the model instance endpoint and returns an model instance.
+As it is lazy load, the returned model instance will have its attributes setted to the default values.
+After the return of the request, the instance attributes will be filled with the response values.
+
+- `id`:
+	- type: `string|int`
+	- optional: `no`
+	- description: The unique identifier of the instance to be retrieved
+- `success_cb`:
+	- type: `function(instance, responseHeaders)`
+	- optional: `yes`
+	- description: The success callback to be called on the success response. It shall receive the instance returned from the server and the HTTP response headers.
+- `error_cb`:
+	- type: `function(httpResponse)`
+	- optional: `yes`
+	- description: The error callback to be called on the error response. It Shall receive the HTTP response.
+
 &nbsp;
+
+***
 
 # Model Instance
 
