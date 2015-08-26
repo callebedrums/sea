@@ -275,33 +275,60 @@ After the return of the request, the instance attributes will be filled with the
 
 # Model Instance
 
+All model instances have the following methods and attributes.
+
 &nbsp;
 
 `.id`
+
+All instance have an unique identifier and it is accessed by the attribute `id`.
+For new instances, the id value will be zero. After a save operation, the id will be filled
+with the value returned by the server.
+
+The id field is used to calculate the instance URL to operate over it.
+It also compose the JSON sent to and received by the server, except in the create operation, when the id is not defined yet.
 
 &nbsp;
 
 `.<field_name>`
 
+All instances will have attributes as defined in the Model definition. You can use this attributes to get and set their values.
+
+In the case of a belongsto relationship attribute, it is possible to set it to an instance of the related model, or an id that identify the instance.
+If an id is setted to the attribute, the Sea will create an empty instance of the related model and attribute the id value to this instance.
+
+In the case of a hasMany relationship attribute, its value have to be an array of related model instances.
+
 &nbsp;
 
 `._url`
+
+The read only endpoint configured to that instance. All instance of the same model have the same value for this attribute;
 
 &nbsp;
 
 `.isNew`
 
+Read only attribute that indicates if the instance is new or note. In other words, it indicates if there is an server resource corresponding to the instance.
+Basically, it indicates if the id is equal zero.
+
 &nbsp;
 
 `.isLoaded`
+
+Read only attribute that indicates if the instace is loaded. It may have an id setted to id, but was not loaded from the server yet.
 
 &nbsp;
 
 `.modelName`
 
+Read only attribute that identify the Model name of the instance. You can use this attribute to identify the instances and handle them properly.
+
 &nbsp;
 
 `.<method_name>()`
+
+All instances will have methods as defined in the Model definition. You can call them as instance methods.
 
 &nbsp;
 
