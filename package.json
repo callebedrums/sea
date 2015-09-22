@@ -1,0 +1,38 @@
+{
+  "name": "sea",
+  "version": "1.0.0",
+  "description": "An AngularJs Framework to manage resources served by a REST service, and also an ORM to define models and their relationships.",
+  "keywords": [
+    "sea",
+    "angularjs",
+    "orm",
+    "rest",
+    "restfull"
+  ],
+  "main": "src/sea.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/callebedrums/sea.git"
+  },
+  "author": "\"Callebe Gomes\"",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/callebedrums/sea/issues",
+    "email": "callebedrums@gmail.com"
+  },
+  "homepage": "https://github.com/callebedrums/sea",
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "karma": "^0.13.10",
+    "karma-chai": "^0.1.0",
+    "karma-mocha": "^0.2.0",
+    "karma-phantomjs-launcher": "^0.2.1",
+    "karma-sinon": "^1.0.4",
+    "mocha": "^2.3.3",
+    "phantomjs": "^1.9.18",
+    "sinon": "^1.17.0"
+  }
+}
