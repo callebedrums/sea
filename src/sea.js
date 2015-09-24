@@ -2,11 +2,10 @@
  * @author: Callebe Gomes
  * */
 
-if(!String.prototype.uncapitalize){
-    String.prototype.uncapitalize = function () {
-        return this.charAt(0).toLowerCase() + this.slice(1);
-    };
-}
+
+String.prototype.uncapitalize = function () {
+    return this.charAt(0).toLowerCase() + this.slice(1);
+};
 
 var SeaORM = (function (angular) {
     "use strict";
@@ -457,18 +456,17 @@ var SeaORM = (function (angular) {
         if (typeof settings === 'object') this.settings(settings);
     };
 
-    if(angular) {
-        angular.module('seaModel', ['ngResource'])
-        .provider('$seaModel', function seaModelProvider() {
-            var settings = {};
-            this.settings = function (defSettings) {
-                angular.extend(settings, defSettings);
-            };
-            this.$get = ['$resource', function seaModelFactory($resource) {
-                return new SeaORM($resource, settings); 
-            }];
-        });
-    }
+    
+    angular.module('seaModel', ['ngResource'])
+    .provider('$seaModel', function seaModelProvider() {
+        var settings = {};
+        this.settings = function (defSettings) {
+            angular.extend(settings, defSettings);
+        };
+        this.$get = ['$resource', function seaModelFactory($resource) {
+            return new SeaORM($resource, settings); 
+        }];
+    });
 
     return SeaORM;
-}(angular));
+}) (angular);
