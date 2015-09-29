@@ -11,17 +11,6 @@ var SeaORM = (function (angular) {
     "use strict";
     var Models = {},
     
-    prefixedURL = function (settings, declaration){
-        var prefix = settings.urlPrefix,
-            url = '';
-        if(declaration.url){
-            url = declaration.url;
-        } else {
-            url = typeof settings.url === 'function' ? settings.url(declaration.name): settings.url;
-        }
-        return prefix + url;
-    },
-    
     addProperty = function (obj, name) {
         if (typeof obj[name] === 'undefined') {
             Object.defineProperty(obj, name, {
@@ -65,12 +54,6 @@ var SeaORM = (function (angular) {
                     _private[this._id].fields[field] = _private[this._id].fields[field](this);
                 }
                 addProperty(this, field);
-            }
-            
-            for (var method in declaration.methods) {
-                if(typeof declaration.methods[method] === 'function') {
-                    this.constructor.prototype[method] = declaration.methods[method];
-                }
             }
             
             if(typeof data === 'object'){
@@ -356,11 +339,11 @@ var SeaORM = (function (angular) {
         return HasMany;
     }()),
 
-    SeaORM = function SeaORM($resource, settings) {
+    SeaORM = function SeaORM($resource, config) {
         var self = this,
-        defaultSettings = {
-            urlPrefix: '',
-            url: function (name) {
+        defaultConfig = {
+            endpointPrefix: '',
+            endpoint: function (name) {
                 return '/' + name.uncapitalize() + '/:id/';
             },
             methods: {
@@ -373,21 +356,50 @@ var SeaORM = (function (angular) {
             }
         };
 
-        this.settings = function (settings) {
-            if(typeof settings !== 'object') return defaultSettings;
-            angular.extend(defaultSettings, settings);
+        this.config = function (config) {
+            if(typeof config !== 'object') return defaultConfig;
+            angular.extend(defaultConfig, config);
             return self;
         };
 
-        this.newModel = function (declaration, settings) {
-            if(settings) {
-                settings = angular.extend({}, defaultSettings, settings);
-            } else {
-                settings = defaultSettings;
+        this.prefixedEndpoint = function (config, declaration) {
+            if(typeof config !== 'object') {
+                throw 'config should be an object';
             }
+            if(typeof declaration !== 'object') {
+                throw 'declaration should be an object';
+            }
+
+            var prefix = config.endpointPrefix || '',
+                endpoint = declaration.endpoint || '';
+
+            if(!endpoint) {
+                if (typeof config.endpoint === 'function') {
+                    endpoint = config.endpoint(declaration.name);
+                } else if(typeof config.endpoint === 'string') {
+                    endpoint = config.endpoint;
+                }
+            }
+
+            return prefix + endpoint;
+        };
+
+        this.newModel = function (declaration, config) {
+            if(typeof declaration !== 'object') {
+                throw 'declaration should be an object';
+            }
+            if(typeof declaration.name !== 'string') {
+                throw 'declaration should define a string name attribute';
+            }
+
+            if (typeof config !== 'object') {
+                config = {};
+            }
+
+            config = angular.extend({}, defaultConfig, config);
             
-            var url = prefixedURL(settings, declaration),
-            modelResource = $resource(url, {id: '@id'}, settings.methods);
+            var endpoint = self.prefixedEndpoint(config, declaration),
+            modelResource = $resource(endpoint, {id: '@id'}, config.methods);
 
             var NewModel = function () {
                 var args = Array.prototype.slice.call(arguments);
@@ -398,8 +410,14 @@ var SeaORM = (function (angular) {
             NewModel.prototype = Object.create(SeaModel.prototype);
             NewModel.prototype.constructor = NewModel;
             
-            Object.defineProperty(NewModel.prototype, '_url', { value: url, writable: false, enumerable: false, configurable: false });
-            Object.defineProperty(NewModel.prototype, 'modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(NewModel.prototype, '_endpoint', { value: endpoint, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(NewModel.prototype, '_modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
+
+            for(var m in declaration.methods) {
+                if(typeof declaration.methods[m] === 'function') {
+                    NewModel.prototype[m] = declaration.methods[m];
+                }
+            }
             
             NewModel.query = function (params, success_cb, error_cb) {
                 if(typeof params === 'function') {
@@ -453,18 +471,18 @@ var SeaORM = (function (angular) {
             };
         };
 
-        if (typeof settings === 'object') this.settings(settings);
+        if (typeof config === 'object') this.config(config);
     };
 
     
     angular.module('seaModel', ['ngResource'])
     .provider('$seaModel', function seaModelProvider() {
-        var settings = {};
-        this.settings = function (defSettings) {
-            angular.extend(settings, defSettings);
+        var config = {};
+        this.config = function (userConfig) {
+            angular.extend(config, userConfig);
         };
         this.$get = ['$resource', function seaModelFactory($resource) {
-            return new SeaORM($resource, settings); 
+            return new SeaORM($resource, config); 
         }];
     });
 

@@ -16,7 +16,7 @@ module.exports = function(config) {
         'bower_components/angular/angular.min.js',
         'bower_components/angular-resource/angular-resource.min.js',
         'bower_components/angular-mocks/angular-mocks.js',
-        'sea.js',
+        'src/**/*.js',
         'test/**/*.spec.js'
     ],
 
@@ -27,13 +27,13 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-        'sea.js': ['coverage']
+        'src/**/*.js': ['coverage']
     },
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress', 'coverage'],
+    reporters: ['mocha', 'coverage'],
 
     coverageReporter: {
         dir: 'reports/coverage',
