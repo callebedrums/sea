@@ -445,6 +445,10 @@ var SeaORM = (function (angular) {
             };
             
             NewModel.get = function (id, success_cb, error_cb) {
+                if(!id) {
+                    throw 'id argument is required';
+                }
+
                 var instance = new NewModel({id: id});
                 instance.load(success_cb, error_cb);
                 return instance;
@@ -471,7 +475,7 @@ var SeaORM = (function (angular) {
             };
         };
 
-        if (typeof config === 'object') this.config(config);
+        this.config(config);
     };
 
     

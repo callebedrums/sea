@@ -233,6 +233,133 @@ describe('Sea Test Suite', function () {
 
                 assert.isUndefined(MyModel.prototype.m3, 'm3 is defined');
             });
+
+            it('should define the Class methods', function () {
+                var MyModel = $seaModel.newModel(declaration);
+
+                assert.isDefined(MyModel.query, 'query is not defined');
+                assert.isFunction(MyModel.query, 'query is not a function');
+
+                assert.isDefined(MyModel.get, 'get is not defined');
+                assert.isFunction(MyModel.get, 'get is not a function');
+            });
+
+            /**************************
+             * NewMode.get tests
+             **************************/
+            describe('get method', function () {
+                var MyModel;
+
+                beforeEach(function () {
+                    MyModel = $seaModel.newModel(declaration);
+                });
+
+                it('should throw an error when get method is called without the id parameter', function () {
+                    assert.throws(function () {
+                        MyModel.get();
+                    }, 'id argument is required');
+                });
+
+                it('should return a MyModel instance', function () {
+                    var protoMock = sinon.mock(MyModel.prototype);
+                    protoMock.expects('load');
+
+                    var instance = MyModel.get(1);
+                    expect(instance).to.be.an.instanceof(MyModel);
+
+                    protoMock.verify();
+                    protoMock.restore();
+                });
+            });
+
+            /**************************
+             * NewMode.query tests
+             **************************/
+            describe('query method', function () {
+                var MyModel;
+                var $httpBackend;
+
+                var verifyBackendCall = function () {
+                    $httpBackend.flush();
+                    $httpBackend.verifyNoOutstandingExpectation();
+                    $httpBackend.verifyNoOutstandingRequest();
+                };
+
+                beforeEach(inject(function (_$httpBackend_) {
+                    $httpBackend = _$httpBackend_;
+                    MyModel = $seaModel.newModel(declaration);
+                }));
+
+                it('should return an empty array, and fill it after the request', function () {
+                    $httpBackend.expect('GET', '/myModel').respond(200, [{id:1},{id:2}]);
+
+                    var result = MyModel.query();
+
+                    expect(result).to.eql([]);
+
+                    verifyBackendCall();
+
+                    expect(result.length).to.equal(2);
+                });
+
+                it('should pass the parameters as query string', function () {
+                    $httpBackend.expect('GET', '/myModel?param=value').respond(200, [{id:1},{id:2}]);
+
+                    var result = MyModel.query({param:'value'});
+
+                    verifyBackendCall();
+                });
+
+                it('should call success callback when presented', function () {
+                    $httpBackend.expect('GET', '/myModel').respond(200, [{id:1},{id:2}]);
+                    var callback = sinon.spy();
+                    var result = MyModel.query(callback);
+
+                    verifyBackendCall();
+
+                    expect(callback.calledWith(result)).to.be.true;
+                });
+
+                it('should call error callback when presented', function () {                    
+                    $httpBackend.expect('GET', '/myModel').respond(500);
+
+                    var result = MyModel.query();
+
+                    verifyBackendCall();
+
+                    $httpBackend.expect('GET', '/myModel').respond(500);
+
+                    var callback = sinon.spy();
+                    result = MyModel.query(function () {}, callback);
+
+                    verifyBackendCall();
+
+                    expect(callback.calledOnce).to.be.true;
+                });
+            });
+
+
+            /**************************
+             * NewMode.query tests
+             **************************/
+            describe('NewModel instance', function () {
+                
+            });
         });
+
+        /**************************
+         * $seaModel.belongsTo tests
+         **************************/
+        describe('belongsTo method', function () {
+            
+        });
+
+        /**************************
+         * $seaModel.hasMany tests
+         **************************/
+        describe('hasMany method', function () {
+            
+        });
+
     });
 });
