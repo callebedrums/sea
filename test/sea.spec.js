@@ -184,7 +184,7 @@ describe('Sea Test Suite', function () {
                 assert.isFunction($seaModel.newModel, '$seaModel.newModel is not a function');
             });
 
-            it('should throw an error if the newModel method does not receive an valid declaration parameter', function () {
+            it('should throw an error if the newModel method does not receive a valid declaration parameter', function () {
                 assert.throws(function () {
                     $seaModel.newModel();
                 }, 'declaration should be an object');
@@ -245,7 +245,7 @@ describe('Sea Test Suite', function () {
             });
 
             /**************************
-             * NewMode.get tests
+             * NewModel.get tests
              **************************/
             describe('get method', function () {
                 var MyModel;
@@ -273,7 +273,7 @@ describe('Sea Test Suite', function () {
             });
 
             /**************************
-             * NewMode.query tests
+             * NewModel.query tests
              **************************/
             describe('query method', function () {
                 var MyModel;
@@ -340,7 +340,7 @@ describe('Sea Test Suite', function () {
 
 
             /**************************
-             * NewMode.query tests
+             * NewModel.query tests
              **************************/
             describe('NewModel instance', function () {
                 
@@ -351,14 +351,162 @@ describe('Sea Test Suite', function () {
          * $seaModel.belongsTo tests
          **************************/
         describe('belongsTo method', function () {
+        	var TestModel = null;
             
+            beforeEach(function () {
+            	TestModel = $seaModel.newModel({ name:'Test' });
+            });
+
+            it('should throws an exception if belongsTo method does not receive a valid model parameter', function () {
+            	expect($seaModel.belongsTo).to.throw('Invalid model parameter. It should be a string or Sea Model!');
+            	expect(function () {
+            		$seaModel.belongsTo({});
+            	}).to.throw('Invalid model parameter. It should be a string or Sea Model!');
+            	expect(function () {
+            		$seaModel.belongsTo('Test');
+            	}).to.not.throw();
+            	expect(function () {
+            		$seaModel.belongsTo(TestModel);
+            	}).to.not.throw();
+            });
+
+            it('should return a function', function () {
+            	expect($seaModel.belongsTo('Test')).to.be.instanceof(Function);
+            });
+
+            it('should return an Object', function () {
+            	expect($seaModel.belongsTo('Test')({})).to.be.instanceof(Object);
+            	expect($seaModel.belongsTo(TestModel)({})).to.be.instanceof(Object);
+            });
+
+            it('should define object, model and instance attributes', function () {
+            	var instance = {};
+            	var belongsToObj = $seaModel.belongsTo('Test')(instance);
+
+            	expect(belongsToObj.instance).to.be.defined;
+            	expect(belongsToObj.instance).to.equal(instance);
+
+            	expect(belongsToObj.model).to.be.defined;
+            	expect(belongsToObj.model).to.equal(TestModel);
+
+            	expect(belongsToObj.object).to.be.defined;
+            	expect(belongsToObj.object).to.be.null;
+            });
+
+            it('should return object.id', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+
+            	expect(belongsToObj.toJS()).to.be.null;
+            	belongsToObj.object = { id: 123 };
+            	expect(belongsToObj.toJS()).to.equal(123);
+            });
+
+            it('should call object.load if it is not loaded', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+            	var scb = function () {};
+            	var ecb = function () {};
+            	var obj = {
+            		isNew: false,
+            		isLoaded: false,
+            		load: sinon.spy()
+            	};
+
+            	belongsToObj.object = obj;
+
+            	expect(belongsToObj.get(scb, ecb)).to.equal(obj);
+            	expect(obj.load.calledWith(scb, ecb)).to.be.true;
+            });
+
+            it('should call success_cb if object is already loaded', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+            	var scb = sinon.spy();
+            	var obj = {
+            		isNew: true,
+            		isLoaded: true,
+            		load: sinon.spy()
+            	};
+            	belongsToObj.object = obj;
+
+            	expect(belongsToObj.get()).to.equal(obj);
+            	expect(belongsToObj.get(scb)).to.equal(obj);
+            	expect(scb.calledWith(obj)).to.be.true;
+            });
+
+            it('should set the object value to null', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+            	var obj = {};
+            	belongsToObj.object = obj;
+
+            	belongsToObj.set('1');
+            	expect(belongsToObj.object).to.equal(obj);
+
+            	belongsToObj.set(null);
+            	expect(belongsToObj.object).to.be.null;
+            });
+
+            it('should set the object value to Test instance', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+            	var test = new TestModel();
+
+            	belongsToObj.set(test);
+            	expect(belongsToObj.object).to.equal(test);
+            });
+
+            it('should set the object to Test instance when receive an id', function () {
+            	var belongsToObj = $seaModel.belongsTo('Test')({});
+            	var test = new TestModel({ id: 1 });
+            	belongsToObj.object = test;
+
+            	belongsToObj.set(1);
+            	expect(belongsToObj.object).to.equal(test);
+            	expect(belongsToObj.object.id).to.equal(1);
+
+            	belongsToObj.set(2);
+            	expect(belongsToObj.object).to.not.equal(test);
+            	expect(belongsToObj.object.id).to.equal(2);
+            });
         });
 
         /**************************
          * $seaModel.hasMany tests
          **************************/
         describe('hasMany method', function () {
+            var TestModel = null;
             
+            beforeEach(function () {
+            	TestModel = $seaModel.newModel({ name:'Test' });
+            });
+
+            it('should throws an exception if hasMany method does not receive a valid model parameter', function () {
+            	expect($seaModel.hasMany).to.throw('Invalid model parameter. It should be a string or Sea Model!');
+            	expect(function () {
+            		$seaModel.hasMany({});
+            	}).to.throw('Invalid model parameter. It should be a string or Sea Model!');
+            	expect(function () {
+            		$seaModel.hasMany('Test', '');
+            	}).to.not.throw();
+            	expect(function () {
+            		$seaModel.hasMany(TestModel, '');
+            	}).to.not.throw();
+            });
+
+            it('should throws an exception if hasMany method does not receive a valid related_field parameters', function () {
+            	expect(function () {
+            		$seaModel.hasMany('Test');
+            	}).to.throw('Invalid related_field parameter. It should be a string!');
+            	expect(function () {
+            		$seaModel.hasMany('Test', 'related_field');
+            	}).to.not.throw();
+            });
+
+            it('should return a function', function () {
+            	expect($seaModel.hasMany('Test', 'related_field')).to.be.instanceof(Function);
+            });
+
+            it('should return an Object', function () {
+            	expect($seaModel.hasMany('Test', 'related_field')({})).to.be.instanceof(Object);
+            	expect($seaModel.hasMany(TestModel, 'related_field')({})).to.be.instanceof(Object);
+            });
         });
 
     });

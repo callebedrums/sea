@@ -186,7 +186,10 @@ var SeaORM = (function (angular) {
             this.model = model;
             this.instance = instance;
         }
-        
+
+        /**
+         * All Relational objects shal have the get, set and toJS methods
+         **/
         Relational.prototype.get = function (success_cb, error_cb) { }
         Relational.prototype.set = function (v) { };
         Relational.prototype.toJS = function () { };
@@ -200,11 +203,15 @@ var SeaORM = (function (angular) {
         };
         
         BelongsTo.prototype.toJS = function () {
+            Relational.prototype.toJS.call(this);
+
             if(!this.object) return null;
             return this.object.id;
         };
         
         BelongsTo.prototype.get = function (success_cb, error_cb) {
+            Relational.prototype.get.call(this, success_cb, error_cb);
+
             if(this.object && !this.object.isNew && !this.object.isLoaded) {
                 this.object.load(success_cb, error_cb);
             } else {
@@ -214,8 +221,10 @@ var SeaORM = (function (angular) {
         };
 
         BelongsTo.prototype.set = function (value) {
+            Relational.prototype.set.call(this, value);
+
             if (value != null && typeof value == 'number') {
-                value = parseInt(value);
+                value = parseInt(value, 10);
                 if(!isNaN(value) && (this.object == null || this.object.id != value)) {
                     this.object = new this.model({id: value});
                 }
@@ -260,6 +269,8 @@ var SeaORM = (function (angular) {
         };
         
         HasMany.prototype.toJS = function () {
+            Relational.prototype.toJS.call(this);
+
             if(!this.object) return null;
             var ids = [];
             for(var i = 0; i < this.object.length; i++) {
@@ -279,6 +290,8 @@ var SeaORM = (function (angular) {
         };
         
         HasMany.prototype.get = function (success_cb, error_cb) {
+            Relational.prototype.get.call(this, success_cb, error_cb);
+
             var self = this;
             if(!self.object) {
                 var params = {};
@@ -301,7 +314,10 @@ var SeaORM = (function (angular) {
         };
 
         HasMany.prototype.set = function (value) {
+            Relational.prototype.set.call(this, value);
+
             if (typeof value === 'number') {
+                value = parseInt(value, 10);
                 if(!this.object) {
                     this.object = [];
                     this.isLoaded = true;
@@ -321,12 +337,14 @@ var SeaORM = (function (angular) {
 
             } else if (value instanceof Array) {
                 var new_object = [];
+                var added = {};
+                this.object = new_object;
                 for(var i = 0; i < value.length; i++) {
-                    if(value[i] instanceof this.model && !this.has_object(value[i].id)) {
+                    if(value[i] instanceof this.model && !added[value[i].id]) {
                         new_object.push(value[i]);
+                        added[value[i].id] = true;
                     }
                 }
-                this.object = new_object;
                 this.isLoaded = true;
 
             } else if (value == null) {
@@ -460,6 +478,12 @@ var SeaORM = (function (angular) {
         };
         
         this.belongsTo = function (model) {
+            if (model === undefined
+                || model === null
+                || !(model.prototype instanceof SeaModel) && (typeof model !== 'string' )) {
+                throw 'Invalid model parameter. It should be a string or Sea Model!';
+            }
+
             return function (instance) {
                 if(typeof model === "string")
                     return new BelongsTo(Models[model], instance);
@@ -468,6 +492,16 @@ var SeaORM = (function (angular) {
         };
         
         this.hasMany = function (model, related_field) {
+            if (model === undefined
+                || model === null
+                || !(model.prototype instanceof SeaModel) && (typeof model !== 'string' )) {
+                throw 'Invalid model parameter. It should be a string or Sea Model!';
+            }
+
+            if (typeof related_field !== 'string') {
+                throw 'Invalid related_field parameter. It should be a string!';
+            }
+
             return function (instance) {
                 if(typeof model === "string")
                     return new HasMany(Models[model], instance, related_field);
