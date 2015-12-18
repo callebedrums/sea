@@ -507,6 +507,89 @@ describe('Sea Test Suite', function () {
             	expect($seaModel.hasMany('Test', 'related_field')({})).to.be.instanceof(Object);
             	expect($seaModel.hasMany(TestModel, 'related_field')({})).to.be.instanceof(Object);
             });
+
+            it('should return the list of ids', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+
+                expect(hasManyObj.toJS()).to.be.null;
+
+                hasManyObj.object = [];
+                expect(hasManyObj.toJS()).to.eql([]);
+
+                hasManyObj.object = [{id:1}, {id:2}];
+                expect(hasManyObj.toJS()).to.eql([1, 2]);
+            });
+
+            it('should return if it has object', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+
+                expect(hasManyObj.has_object(1)).to.be.false;
+
+                hasManyObj.object = [{id:2}];
+                expect(hasManyObj.has_object(1)).to.be.false;
+                expect(hasManyObj.has_object(2)).to.be.true;
+            });
+
+            it('should return the object', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var obj = {};
+                hasManyObj.object = obj;
+
+                expect(hasManyObj.get()).to.equal(obj);
+            });
+
+            it('should call the success_cb if the object is loaded', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var obj = {};
+                var spy = sinon.spy();
+                hasManyObj.object = obj;
+                hasManyObj.execute_success_cb = spy;
+                hasManyObj.isLoaded = true;
+
+                expect(hasManyObj.get()).to.equal(obj);
+                expect(spy.calledWith(obj)).to.be.true;
+            });
+
+            it('should load the object', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var spy = sinon.spy();
+                TestModel.query = spy;
+
+                expect(hasManyObj.get()).to.be.defined;
+                expect(spy.called).to.be.true;
+            });
+
+            it('should load the object', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var p, scb, ecb;
+                var spy = sinon.spy(function (_p, _scb, _ecb) {
+                    p = _p;
+                    scb = _scb;
+                    ecb = _ecb;
+                });
+                var sSpy = sinon.spy();
+                var eSpy = sinon.spy();
+                var val = {};
+                var rh = {};
+                TestModel.query = spy;
+                hasManyObj.instance = {id: 1};
+                hasManyObj.execute_success_cb = sSpy;
+                hasManyObj.execute_errors_cb = eSpy;
+
+                expect(hasManyObj.get()).to.be.defined;
+                expect(p).to.eql({ r_field:1 });
+                expect(scb).to.be.instanceof(Function);
+                expect(ecb).to.be.instanceof(Function);
+
+                expect(hasManyObj.isLoaded).to.be.false;
+                scb(val, rh);
+                expect(sSpy.calledWith(val, rh)).to.be.true;
+                expect(hasManyObj.isLoaded).to.be.true;
+
+                ecb(rh);
+                expect(eSpy.calledWith(rh)).to.be.true;
+
+            });
         });
 
     });
