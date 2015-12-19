@@ -343,7 +343,112 @@ describe('Sea Test Suite', function () {
              * NewModel.query tests
              **************************/
             describe('NewModel instance', function () {
-                
+                var ModelA = null;
+                var MyModel = null;
+                var fieldSpy = null;
+
+                beforeEach(function () {
+                    fieldSpy = sinon.spy(function (instance) {
+                        return instance.id + 1;
+                    });
+
+                    ModelA = $seaModel.newModel({ name: 'ModelA' });
+
+                    MyModel = $seaModel.newModel({
+                        name: 'MyModel',
+                        fields: {
+                            name: '',
+                            age: 0,
+                            sub: {},
+                            rid: fieldSpy,
+                            a: $seaModel.belongsTo(ModelA)
+                        }
+                    });
+                });
+
+                it('should call the fieldSpy function in the constructor', function () {
+                    var myModel = new MyModel({id:2});
+
+                    expect(myModel.rid).to.equal(3);
+                });
+
+                it('should define the isNew and isLoaded attribute', function () {
+                    var myModel = new MyModel();
+
+                    expect(myModel.isNew).to.be.defined;
+                    expect(myModel.isLoaded).to.be.defined;
+                });
+
+                it('should initialize the id', function () {
+                    var myModel = new MyModel(3);
+
+                    expect(myModel.id).to.equal(3);
+                });
+
+                it('should return the JS object', function () {
+                    var myModel = new MyModel({
+                        id: 3,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: {
+                            subattr: 'abc'
+                        },
+                        a: 3,
+                        rid: 5
+                    });
+
+                    expect(myModel.toJS()).to.eql({
+                        id: 3,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: { subattr: 'abc' },
+                        a: 3,
+                        rid: 5
+                    });
+                });
+
+                it('should return the JSON string', function () {
+                   var myModel = new MyModel({
+                        id: 3,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: {
+                            subattr: 'abc'
+                        },
+                        a: 3,
+                        rid: 5
+                    });
+
+                    expect(myModel.toJSON()).to.eql(JSON.stringify({
+                        id: 3,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: { subattr: 'abc' },
+                        rid: 5,
+                        a: 3
+                    })); 
+                });
+
+                it('should get the relational field', function () {
+                    var myModel = new MyModel();
+
+                    expect(myModel.get('a')).to.be.null;
+                });
+
+                it('should get a copy of the fields', function () {
+                    var myModel = new MyModel();
+
+                    expect(myModel.get()).to.be.instanceof(Object);
+                });
+
+                it('should set fields with object', function () {
+                    var myModel = new MyModel();
+                    var arg = {};
+                    myModel.setFields();
+                    myModel.setFields = sinon.spy();
+                    myModel.set(arg);
+                    expect(myModel.setFields.calledWith(arg)).to.be.true;
+                });
             });
         });
 
@@ -574,7 +679,7 @@ describe('Sea Test Suite', function () {
                 TestModel.query = spy;
                 hasManyObj.instance = {id: 1};
                 hasManyObj.execute_success_cb = sSpy;
-                hasManyObj.execute_errors_cb = eSpy;
+                hasManyObj.execute_error_cb = eSpy;
 
                 expect(hasManyObj.get()).to.be.defined;
                 expect(p).to.eql({ r_field:1 });
@@ -588,7 +693,145 @@ describe('Sea Test Suite', function () {
 
                 ecb(rh);
                 expect(eSpy.calledWith(rh)).to.be.true;
+            });
 
+            it('should not change the object value if the new value is invalid', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                hasManyObj.object = {};
+
+                hasManyObj.set();
+                hasManyObj.set('aaa');
+                expect(hasManyObj.object).to.eql({});
+            });
+
+            it('should insert new model to the list when the value is an ID', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+
+                expect(hasManyObj.object).to.be.null;
+                expect(hasManyObj.isLoaded).to.be.false;
+
+                hasManyObj.set(1);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(1);
+                expect(hasManyObj.object[0]).to.be.instanceof(TestModel);
+                expect(hasManyObj.object[0].id).to.equal(1);
+
+                expect(hasManyObj.isLoaded).to.be.true;
+
+                hasManyObj.set(2);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(2);
+                expect(hasManyObj.object[1]).to.be.instanceof(TestModel);
+                expect(hasManyObj.object[1].id).to.equal(2);
+
+                // trying add the id 2 again;
+                hasManyObj.set(2);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(2);
+                expect(hasManyObj.object[1]).to.be.instanceof(TestModel);
+                expect(hasManyObj.object[1].id).to.equal(2);
+            });
+
+            it('should insert new model to the list when the value is an "model" instance', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var m1 = new TestModel({id: 1});
+                var m2 = new TestModel({id: 2});
+
+                expect(hasManyObj.object).to.be.null;
+                expect(hasManyObj.isLoaded).to.be.false;
+
+                hasManyObj.set(m1);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(1);
+                expect(hasManyObj.object[0]).to.equal(m1);
+
+                expect(hasManyObj.isLoaded).to.be.true;
+
+                hasManyObj.set(m2);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(2);
+                expect(hasManyObj.object[1]).to.equal(m2);
+
+                // trying add the id 2 again;
+                hasManyObj.set(m2);
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(2);
+                expect(hasManyObj.object[1]).to.equal(m2);
+            });
+
+            it('should replace the object array value when the new value is an array', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var m1 = new TestModel({id: 1});
+                var m2 = new TestModel({id: 2});
+                var m3 = new TestModel({id: 2});
+                var arr = [1, 2, "teste", m1, m2, m3];
+
+                expect(hasManyObj.object).to.be.null;
+                expect(hasManyObj.isLoaded).to.be.false;
+
+                hasManyObj.set(arr);
+
+                expect(hasManyObj.isLoaded).to.be.true;
+                expect(hasManyObj.object).to.be.instanceof(Array);
+                expect(hasManyObj.object.length).to.equal(2);
+                expect(hasManyObj.object).to.eql([m1, m2]);
+            });
+
+            it('should set the object value to null', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                hasManyObj.object = [];
+                hasManyObj.isLoaded = true;
+
+                hasManyObj.set(null);
+                expect(hasManyObj.object).to.be.null;
+                expect(hasManyObj.isLoaded).to.be.false;
+            });
+
+            it('should register callbacks', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var s = function () {};
+                var e = function () {};
+
+                hasManyObj.register_callbacks(s, e);
+
+                expect(hasManyObj.loading_success_cb.length).to.equal(1);
+                expect(hasManyObj.loading_error_cb.length).to.equal(1);
+
+                expect(hasManyObj.loading_success_cb[0]).to.equal(s);
+                expect(hasManyObj.loading_error_cb[0]).to.equal(e);
+            });
+
+            it('should execute the success_cb functions', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var s1 = sinon.spy();
+                var s2 = sinon.spy();
+                var v = {};
+                var rh = {};
+                hasManyObj.loading_success_cb = [s1, s2];
+                hasManyObj.loading_error_cb = [1, 2];
+
+                hasManyObj.execute_success_cb(v, rh);
+
+                expect(s1.calledWith(v, rh)).to.be.true;
+                expect(s2.calledWith(v, rh)).to.be.true;
+                expect(hasManyObj.loading_success_cb.length).to.equal(0);
+                expect(hasManyObj.loading_error_cb.length).to.equal(0);
+            });
+
+            it('should execute the success_cb functions', function () {
+                var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
+                var s1 = sinon.spy();
+                var s2 = sinon.spy();
+                var rh = {};
+                hasManyObj.loading_error_cb = [s1, s2];
+                hasManyObj.loading_success_cb = [1, 2];
+
+                hasManyObj.execute_error_cb(rh);
+
+                expect(s1.calledWith(rh)).to.be.true;
+                expect(s2.calledWith(rh)).to.be.true;
+                expect(hasManyObj.loading_success_cb.length).to.equal(0);
+                expect(hasManyObj.loading_error_cb.length).to.equal(0);
             });
         });
 

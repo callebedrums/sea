@@ -49,24 +49,27 @@ var SeaORM = (function (angular) {
                 get: function () { return _private[self._id].fields.id != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
             });
             
+            if(typeof data === 'object'){
+                self.setFields(data);
+            } else if(typeof data === 'number' && parseInt(data, 10)) {
+                self.set('id', parseInt(data, 10));
+            }
+            
             for (var field in _private[this._id].fields) {
                 while(typeof _private[this._id].fields[field] == 'function'){
                     _private[this._id].fields[field] = _private[this._id].fields[field](this);
+                    if (typeof data === 'object' && data[field]) {
+                        self.set(field, data[field]);
+                    }
                 }
                 addProperty(this, field);
-            }
-            
-            if(typeof data === 'object'){
-                self.setFields(data);
-            } else if(typeof data === 'number' && parseInt(data)) {
-                self.set('id', parseInt(data));
             }
         };
         
         SeaModel.prototype.toJS = function () {
             var js = {};
             for(var field in _private[this._id].fields) {
-                if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
+                if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     js[field] = _private[this._id].fields[field].toJS();
                 } else {
                     js[field] = _private[this._id].fields[field];
@@ -81,7 +84,7 @@ var SeaORM = (function (angular) {
         
         SeaModel.prototype.get = function (field, success_cb, error_cb) {
             if (typeof field === 'string' && field in _private[this._id].fields) {
-                if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
+                if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     return _private[this._id].fields[field].get(success_cb, error_cb);
                 }
                 return _private[this._id].fields[field];
@@ -91,10 +94,10 @@ var SeaORM = (function (angular) {
         
         SeaModel.prototype.set = function (field, value) {
             if(typeof field === 'string' && field in _private[this._id].fields) {
-                if (_private[this._id].fields[field] != null && typeof _private[this._id].fields[field] === "object") {
+                if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     _private[this._id].fields[field].set(value);
                     if(this.isLoaded) _private[this._id].resourceObject[field] = _private[this._id].fields[field].toJS();
-                } else {
+                } else if (typeof _private[this._id].fields[field] !== 'function') {
                     _private[this._id].fields[field] = value;
                     if(this.isLoaded) _private[this._id].resourceObject[field] = value;
                 }
@@ -201,6 +204,9 @@ var SeaORM = (function (angular) {
         var BelongsTo = function (model, instance) {
             Relational.call(this, model, instance);
         };
+
+        BelongsTo.prototype = Object.create(Relational.prototype);
+        BelongsTo.prototype.constructor = BelongsTo;
         
         BelongsTo.prototype.toJS = function () {
             Relational.prototype.toJS.call(this);
@@ -245,6 +251,9 @@ var SeaORM = (function (angular) {
             this.loading_error_cb = [];
         };
 
+        HasMany.prototype = Object.create(Relational.prototype);
+        HasMany.prototype.constructor = HasMany;
+
         HasMany.prototype.execute_success_cb = function (value, responseHeaders) {
             for(var i = 0; i < this.loading_success_cb.length; i++) {
                 this.loading_success_cb[i](value, responseHeaders);
@@ -256,14 +265,14 @@ var SeaORM = (function (angular) {
             for(var i = 0; i < this.loading_error_cb.length; i++) {
                 this.loading_error_cb[i](httpResponse);
             }
-            this.loading_error_cb = [];
+            this.loading_success_cb = [];
             this.loading_error_cb = [];
         };
         HasMany.prototype.register_callbacks = function (success_cb, error_cb) {
             if(typeof success_cb === 'function') {
                 this.loading_success_cb.push(success_cb);
             }
-            if(typeof success_cb === 'function') {
+            if(typeof error_cb === 'function') {
                 this.loading_error_cb.push(error_cb);
             }
         };
@@ -300,7 +309,7 @@ var SeaORM = (function (angular) {
                     self.isLoaded = true;
                     self.execute_success_cb(value, responseHeaders)
                 }, function (httpResponse) {
-                    self.execute_errors_cb(httpResponse);
+                    self.execute_error_cb(httpResponse);
                 });
             }
             
@@ -347,10 +356,9 @@ var SeaORM = (function (angular) {
                 }
                 this.isLoaded = true;
 
-            } else if (value == null) {
+            } else if (value === null) {
                 this.object = null;
                 this.isLoaded = false;
-
             }
         };
         
