@@ -12,18 +12,16 @@ var SeaORM = (function (angular) {
     var Models = {},
     
     addProperty = function (obj, name) {
-        if (typeof obj[name] === 'undefined') {
-            Object.defineProperty(obj, name, {
-                get: function () {
-                    return obj.get(name);
-                },
-                set: function (value) {
-                    obj.set(name, value);
-                },
-                enumerable: true,
-                configurable: false
-            });
-        }
+        Object.defineProperty(obj, name, {
+            get: function () {
+                return obj.get(name);
+            },
+            set: function (value) {
+                obj.set(name, value);
+            },
+            enumerable: true,
+            configurable: false
+        });
     },
         
     SeaModel = (function () {

@@ -166,14 +166,23 @@ describe('Sea Test Suite', function () {
         describe('newModel method', function () {
             var declaration;
             var mock;
+            var $httpBackend;
 
-            beforeEach(function () {
+            var verifyBackendCall = function () {
+                $httpBackend.flush();
+                $httpBackend.verifyNoOutstandingExpectation();
+                $httpBackend.verifyNoOutstandingRequest();
+            };
+
+            beforeEach(inject(function (_$httpBackend_) {
+                $httpBackend = _$httpBackend_;
+
                 declaration = {
                     name: 'MyModel'
                 };
 
                 mock = sinon.mock($seaModel);
-            });
+            }));
 
             afterEach(function () {
                 mock.restore();
@@ -277,18 +286,10 @@ describe('Sea Test Suite', function () {
              **************************/
             describe('query method', function () {
                 var MyModel;
-                var $httpBackend;
 
-                var verifyBackendCall = function () {
-                    $httpBackend.flush();
-                    $httpBackend.verifyNoOutstandingExpectation();
-                    $httpBackend.verifyNoOutstandingRequest();
-                };
-
-                beforeEach(inject(function (_$httpBackend_) {
-                    $httpBackend = _$httpBackend_;
+                beforeEach(function () {
                     MyModel = $seaModel.newModel(declaration);
-                }));
+                });
 
                 it('should return an empty array, and fill it after the request', function () {
                     $httpBackend.expect('GET', '/myModel').respond(200, [{id:1},{id:2}]);
@@ -340,7 +341,7 @@ describe('Sea Test Suite', function () {
 
 
             /**************************
-             * NewModel.query tests
+             * NewModel instance tests
              **************************/
             describe('NewModel instance', function () {
                 var ModelA = null;
@@ -448,6 +449,184 @@ describe('Sea Test Suite', function () {
                     myModel.setFields = sinon.spy();
                     myModel.set(arg);
                     expect(myModel.setFields.calledWith(arg)).to.be.true;
+                });
+
+                it('should load the instance from service', function () {
+                    var myModel = new MyModel(1);
+
+                    $httpBackend.expect('GET', '/myModel/1').respond(200, {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: { subattr: 'abc' },
+                        rid: 5,
+                        a: 3
+                    });
+
+                    myModel.load();
+
+                    verifyBackendCall();
+
+                    expect(myModel.id).to.equal(1);
+                    expect(myModel.name).to.equal('Callebe');
+                    expect(myModel.age).to.equal(27);
+                    expect(myModel.sub).to.eql({ subattr: 'abc' });
+                    expect(myModel.rid).to.equal(5);
+                    expect(myModel.a.id).to.equal(3);
+                });
+
+                it('should call the success_cb when loading the instance', function () {
+                    var myModel = new MyModel(1);
+                    var spy = sinon.spy();
+
+                    $httpBackend.expect('GET', '/myModel/1').respond(200, {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: { subattr: 'abc' },
+                        rid: 5,
+                        a: 3
+                    });
+
+                    myModel.load(spy);
+
+                    verifyBackendCall();
+
+                    expect(spy.calledWith(myModel)).to.be.true;
+                });
+
+                it('should call the error_cb when loading the instance', function () {
+                    var myModel = new MyModel(1);
+                    var spy = sinon.spy();
+                    var spy2 = sinon.spy();
+
+                    $httpBackend.expect('GET', '/myModel/1').respond(500);
+
+                    myModel.load(spy);
+                    verifyBackendCall();
+
+                    expect(spy.called).to.be.false;
+                    expect(spy2.called).to.be.false;
+
+                    $httpBackend.expect('GET', '/myModel/1').respond(500);
+
+                    myModel.load(spy, spy2);
+                    verifyBackendCall();
+
+                    expect(spy.called).to.be.false;
+                    expect(spy2.called).to.be.true;
+                });
+
+                it('should save a new instance', function () {
+                    var myModel = new MyModel({
+                        name: 'Callebe',
+                        age: 27,
+                        sub: null
+                    });
+
+                    $httpBackend.expect('POST', '/myModel', {
+                        name: 'Callebe',
+                        age: 27,
+                        sub: null,
+                        rid: 1,
+                        a: null
+                    }).respond(200, {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 27,
+                        sub: null,
+                        rid: 1,
+                        a: null
+                    });
+
+                    myModel.save();
+                    verifyBackendCall();
+                    expect(myModel.id).to.equal(1);
+                });
+
+                it('should update the instance', function () {
+                    var myModel = new MyModel(1);
+                    var spy = sinon.spy();
+
+                    myModel.name = 'Callebe';
+
+                    $httpBackend.expect('PUT', '/myModel/1', {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 0,
+                        sub: {},
+                        rid: 2,
+                        a: null
+                    }).respond(200, {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 0,
+                        sub: {},
+                        rid: 2,
+                        a: null
+                    });
+
+                    myModel.save(spy);
+                    verifyBackendCall();
+                    expect(spy.calledWith(myModel)).to.be.true;
+
+                    spy = sinon.spy();
+                    $httpBackend.expect('PUT', '/myModel/1', {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 0,
+                        sub: {},
+                        rid: 2,
+                        a: null
+                    }).respond(500);
+
+                    myModel.save(spy);
+                    verifyBackendCall();
+                    expect(spy.called).to.be.false;
+
+                    spy = sinon.spy();
+                    $httpBackend.expect('PUT', '/myModel/1', {
+                        id: 1,
+                        name: 'Callebe',
+                        age: 0,
+                        sub: {},
+                        rid: 2,
+                        a: null
+                    }).respond(500);
+
+                    myModel.save(null, spy);
+                    verifyBackendCall();
+                    expect(spy.called).to.be.true;
+                });
+
+                it('should remove the instance', function () {
+                    var myModel = new MyModel();
+                    var spy = sinon.spy();
+                    myModel.remove();
+
+                    myModel.id = 1;
+
+                    $httpBackend.expect('DELETE', '/myModel/1').respond(200);
+                    myModel.remove();
+                    verifyBackendCall();
+
+                    $httpBackend.expect('DELETE', '/myModel/1').respond(200);
+                    myModel.remove(spy);
+                    verifyBackendCall();
+                    expect(spy.calledWith(myModel)).to.be.true;
+
+                    spy = sinon.spy();
+                    $httpBackend.expect('DELETE', '/myModel/1').respond(500);
+                    myModel.remove(spy);
+                    verifyBackendCall();
+                    expect(spy.called).to.be.false;
+
+                    spy = sinon.spy();
+                    $httpBackend.expect('DELETE', '/myModel/1').respond(500);
+                    myModel.remove(null, spy);
+                    verifyBackendCall();
+                    expect(spy.called).to.be.true;
+
                 });
             });
         });
