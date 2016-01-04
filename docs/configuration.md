@@ -11,17 +11,17 @@ Over this page, we will see which configurations cam be changed and what is thei
 ## $seaModelProvider
 
 As a AngularJs module, Sea provides a provider. This provider has only one method
-that should be called to configure the Global Settings of the Sea module.
+that should be called to set up the Global Configuration of the Sea module.
 
-This settings also can be changed for each model definition. See [Model](/model/) for more informations.
+This configuration also can be changed for each model definition. See [Model](/model/) for more informations.
 
-### `.settings(defSettings)`
+### `.config(userConfig)`
 
-The .settings(defSettings) method receives only one parameter, that should be an object with the following attributes:
+The .config(userConfig) method receives only one parameter, that should be an object with the following attributes:
 
 &nbsp;
 
-`url`
+`endpoint`
 
 - type: `string|function`
 - optional: `yes`
@@ -32,21 +32,21 @@ default:
 		return '/' + name.uncapitalize() + '/:id/';
 	}
 
-This attribute define the default URL for each model. When a new model is created, the Sea consults this attribute to define which URL will be used for this model.
+This attribute define the default endpoint for each model. When a new model is created, the Sea consults this attribute to define which URL will be used for this model.
 
 If this attribute is setted as a function, Sea calls it passing the model name as parameter and uses the returned value as URL. If it is a string, Sea just uses it.
 
 &nbsp;
 
-`urlPrefix`
+`endpointPrefix`
 
 - type: `string`
 - optional: `yes`
 - default: `''`
 
-This attribute define the default prefix of the URL for all models. This attribute is prepended to the URL attribute.
+This attribute define the default prefix of the endpoint for all models. This attribute is prepended to the endpoin attribute.
 
-It is useful when your api is exposed on a sub-path of your domain, e.g. my.domain.com/api/. On this case, the urlPrefix attribute should be setted as '/api'.
+It is useful when your api is exposed on a sub-path of your domain, e.g. my.domain.com/api/. On this case, the endpointPrefix attribute should be setted as '/api'.
 
 &nbsp;
 
@@ -72,9 +72,9 @@ For mor details, see the [$resource](https://docs.angularjs.org/api/ngResource/s
 
 ***
 
-## Calculating the URL
+## Calculating the Endpoint
 
-As we previously saw, there are two attributes related to the URL, `url` and `urlPrefix`.
+As we previously saw, there are two attributes related to the endpoint, `endpoint` and `endpointPrefix`.
 Sea uses this two attributes to calculate the model's URL, and it simply concatenates this two values.
 Therefore, the resulting URL always will be equals `urlPrefix + url`.
 
@@ -83,8 +83,8 @@ Therefore, the resulting URL always will be equals `urlPrefix + url`.
 	var myModule = angular.module('myModule', ['seaModel']);
 
 	myModule.config(function ($seaModelProvider) {
-		$seaModelProvider.settings({
-			urlPrefix: '/dashboard/api'
+		$seaModelProvider.config({
+			endpointPrefix: '/dashboard/api'
 		});
 	});
 

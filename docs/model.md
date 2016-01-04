@@ -22,11 +22,11 @@ how to connect models using relational attributes, and how to use this models.
 
 A Sea Model represents a kind or type of resources provided by a REST Service.
 Each model has its own URL to access the resources. To know how Sea calculates 
-the url, consult [Calculating the url](configuration/#calculating-the-url).
+the url, consult [Calculating the endpoint](configuration/#calculating-the-endpoint).
 
 To declare a new Sea Model, use the `newModel` method:
 
-## `$seaModel.newModel (declaration [, settings])`
+## `$seaModel.newModel (declaration [, config])`
 
 This method returns a Sea Model Class that has methods to access the resources and
 can be instantiated to represent a single resource.
@@ -49,31 +49,31 @@ It receives two parameters:
 		- type: `object`
 		- optional: `no`
 		- description: This parameters define the attributes of the model instances.
-		Each attribute can be of any primitive type, or a function that returns a primitive type.
+		Each attribute can be of any type, including objects and functions.
 		Each function will be called when a new Model instance is created and its instance will
 		be passed as argument. The return will be used as the initial value of the attribute.
 		This funcions can not be used to define behaviors.
-		This is the function signature `function (instance) { return <primitive type>; }`.
-		To access a instance attribute, consult [Model Instance](#model-instance)
+		This is the function signature `function (instance) { return <any type>; }`.
+		To access an instance attribute, consult [Model Instance](#model-instance)
 	- `methods`:
 		- type: `object`
 		- optional: `yes`
 		- description: An object with only functions. These functions will be attached to the
 		Model prototype, and they can be accessed directly from a Model instance.
-	- `url`:
+	- `endpoint`:
 		- type: `string|function`
 		- optional: `yes`
-		- description: Define de Model URL. This parameters does not affect the Global Setting, only the Model setting.
-		For more details, consult [$seaModelProvider](/configuration/#seamodelprovider) and [calculating the URL](/configuration/#calculating-the-url)	
+		- description: Define de Model endpoint. This parameters does not affect the Global Configuration, only the Model configuration.
+		For more details, consult [$seaModelProvider](/configuration/#seamodelprovider) and [calculating the endpoint](/configuration/#calculating-the-endpoint)	
 
 &nbsp;
 
-`settings`
+`config`
 
 - type: `object`
 - optional: `yes`
-- description: Set the Model setting, without affect the Global Setting.
-This object has the same attributes of the parameter passed to `$seaModelProvider.settings()` method.
+- description: Set the Model configuration without affect the Global Configuration.
+This object has the same attributes of the parameter passed to `$seaModelProvider.config()` method.
 For mor details, consult [$seaModelProvider](/configuration/#seamodelprovider)
 
 &nbsp;
@@ -294,14 +294,14 @@ It also compose the JSON sent to and received by the server, except in the creat
 
 All instances will have attributes as defined in the Model definition. You can use this attributes to get and set their values.
 
-In the case of a belongsto relationship attribute, it is possible to set it to an instance of the related model, or an id that identify the instance.
+In the case of a belongsTo relationship attribute, it is possible to set it to an instance of the related model, or an id that identify the instance.
 If an id is setted to the attribute, the Sea will create an empty instance of the related model and attribute the id value to this instance.
 
 In the case of a hasMany relationship attribute, its value have to be an array of related model instances.
 
 &nbsp;
 
-`._url`
+`._endpoint`
 
 The read only endpoint configured to that instance. All instance of the same model have the same value for this attribute;
 
