@@ -82,6 +82,7 @@ var SeaORM = (function (angular) {
                     js[field] = _private[this._id].fields[field];
                 }
             }
+            js.id = this.getId();
             return js;
         };
         
@@ -152,6 +153,8 @@ var SeaORM = (function (angular) {
                     delete js.id;
                 }
                 _private[this._id].resourceObject = new this._resource(js);
+            } else {
+                _private[this._id].resourceObject.id = this.getId();
             }
 
             var _success_cb = function (value, responseHeaders) {
@@ -182,6 +185,7 @@ var SeaORM = (function (angular) {
                 if(!this.isLoaded){
                     _private[this._id].resourceObject = new this._resource(this.toJS());
                 }
+                _private[this._id].resourceObject.id = this.getId();
 
                 _private[this._id].resourceObject.$remove(function (value, responseHeaders) {
                     if(typeof success_cb === 'function') {
