@@ -626,7 +626,75 @@ describe('Sea Test Suite', function () {
                     myModel.remove(null, spy);
                     verifyBackendCall();
                     expect(spy.called).to.be.true;
+                });
 
+                it('should define the getId method', function () {
+                    var myModel = new MyModel(1);
+
+                    expect(myModel.getId()).to.equal(1);
+                });
+
+                it('should define the setId method', function () {
+                    var myModel = new MyModel(1);
+
+                    expect(myModel.id).to.equal(1);
+                    myModel.setId(2);
+                    expect(myModel.id).to.equal(2);
+                });
+
+                it('should call the getId method from the getter', function () {
+                    var myModel = new MyModel();
+                    var myModelMock = sinon.mock(myModel);
+                    myModelMock.expects('getId').returns(3);
+
+                    expect(myModel.id).to.equal(3);
+                    myModelMock.verify();
+
+                    myModelMock.restore();
+                });
+
+                it('should call the setId method from the setter', function () {
+                    var myModel = new MyModel();
+                    var myModelMock = sinon.mock(myModel);
+                    myModelMock.expects('setId');
+
+                    myModel.id = 3;
+                    myModelMock.verify();
+                    myModelMock.restore();
+                });
+
+                it('should overwrite the getId method', function () {
+                    var OWGetIdModel = $seaModel.newModel({
+                        name: 'OWGetIdModel',
+                        fields: {
+                            myOwnId: 1
+                        },
+                        methods: {
+                            getId: function () {
+                                return this.myOwnId + 2;
+                            }
+                        }
+                    });
+
+                    var obj = new OWGetIdModel({myOwnId: 2});
+                    expect(obj.id).to.equal(4);
+                });
+
+                it('should overwrite the setId method', function () {
+                    var spy = sinon.spy();
+                    var OWGetIdModel = $seaModel.newModel({
+                        name: 'OWGetIdModel',
+                        fields: {
+                            myOwnId: 1
+                        },
+                        methods: {
+                            setId: spy
+                        }
+                    });
+
+                    var obj = new OWGetIdModel();
+                    obj.id = 4;
+                    expect(spy.calledWith(4)).to.true;
                 });
             });
         });
@@ -722,7 +790,7 @@ describe('Sea Test Suite', function () {
             	belongsToObj.object = obj;
 
             	belongsToObj.set('1');
-            	expect(belongsToObj.object).to.equal(obj);
+            	expect(belongsToObj.object).to.be.defined;
 
             	belongsToObj.set(null);
             	expect(belongsToObj.object).to.be.null;
@@ -874,12 +942,12 @@ describe('Sea Test Suite', function () {
                 expect(eSpy.calledWith(rh)).to.be.true;
             });
 
-            it('should not change the object value if the new value is invalid', function () {
+            it('should not change the object value if the new value is undefined', function () {
                 var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
                 hasManyObj.object = {};
 
                 hasManyObj.set();
-                hasManyObj.set('aaa');
+                hasManyObj.set();
                 expect(hasManyObj.object).to.eql({});
             });
 

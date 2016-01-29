@@ -49,8 +49,8 @@ var SeaORM = (function (angular) {
             
             if(typeof data === 'object'){
                 self.setFields(data);
-            } else if(typeof data === 'number' && parseInt(data, 10)) {
-                self.set('id', parseInt(data, 10));
+            } else if(typeof data !== 'function' && data) {
+                self.set('id', data);
             }
             
             for (var field in _private[this._id].fields) {
@@ -62,6 +62,15 @@ var SeaORM = (function (angular) {
                 }
                 addProperty(this, field);
             }
+        };
+
+        SeaModel.prototype.getId = function () {
+            return _private[this._id].fields['id'];
+        };
+
+        SeaModel.prototype.setId = function (id) {
+            _private[this._id].fields['id'] = id
+            if(this.isLoaded) _private[this._id].resourceObject['id'] = id;
         };
         
         SeaModel.prototype.toJS = function () {
@@ -81,6 +90,10 @@ var SeaORM = (function (angular) {
         };
         
         SeaModel.prototype.get = function (field, success_cb, error_cb) {
+            if (field === 'id') {
+                return this.getId();
+            }
+
             if (typeof field === 'string' && field in _private[this._id].fields) {
                 if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     return _private[this._id].fields[field].get(success_cb, error_cb);
@@ -91,6 +104,10 @@ var SeaORM = (function (angular) {
         };
         
         SeaModel.prototype.set = function (field, value) {
+            if (field === 'id') {
+                this.setId(value);
+            }
+
             if(typeof field === 'string' && field in _private[this._id].fields) {
                 if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     _private[this._id].fields[field].set(value);
@@ -227,13 +244,10 @@ var SeaORM = (function (angular) {
         BelongsTo.prototype.set = function (value) {
             Relational.prototype.set.call(this, value);
 
-            if (value != null && typeof value == 'number') {
-                value = parseInt(value, 10);
-                if(!isNaN(value) && (this.object == null || this.object.id != value)) {
-                    this.object = new this.model({id: value});
-                }
-            } else if (value == null || value instanceof this.model) {
+            if (value === null || value instanceof this.model) {
                 this.object = value;
+            } else if (typeof value !== 'functoin' && value && (this.object == null || this.object.id != value)) {
+                this.object = new this.model({id: value});
             }
         };
         
@@ -323,17 +337,7 @@ var SeaORM = (function (angular) {
         HasMany.prototype.set = function (value) {
             Relational.prototype.set.call(this, value);
 
-            if (typeof value === 'number') {
-                value = parseInt(value, 10);
-                if(!this.object) {
-                    this.object = [];
-                    this.isLoaded = true;
-                }
-                if (!this.has_object(value)) {
-                    this.object.push(new this.model({id: value}));
-                }
-
-            } else if (value instanceof this.model) {
+            if (value instanceof this.model) {
                 if(!this.object) {
                     this.object = [];
                     this.isLoaded = true;
@@ -357,6 +361,15 @@ var SeaORM = (function (angular) {
             } else if (value === null) {
                 this.object = null;
                 this.isLoaded = false;
+            } else if (typeof value !== 'function' && value) {
+                if(!this.object) {
+                    this.object = [];
+                    this.isLoaded = true;
+                }
+                if (!this.has_object(value)) {
+                    this.object.push(new this.model({id: value}));
+                }
+
             }
         };
         
