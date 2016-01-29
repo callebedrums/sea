@@ -26,25 +26,25 @@ var SeaORM = (function (angular) {
         
     SeaModel = (function () {
         var _private = {},
-        object_id = 1;
-    
-        var SeaModel = function (declaration, resource, data) {
+        object_id = 1,
+
+        SeaModel = function (declaration, resource, data) {
             var self = this;
             
             Object.defineProperty(self, '_id', { value: object_id++, writable: false, enumerable: false, configurable: false });
             Object.defineProperty(self, '_resource', { value: resource, writable: false, enumerable: false, configurable: false });
             
             _private[this._id] = {
-                fields: angular.extend({ id:0 }, declaration.fields),
+                fields: angular.extend({ 'id': 0 }, declaration.fields),
                 resourceObject: null
             };
             
             Object.defineProperty(self, 'isNew', {
-                get: function () { return _private[self._id].fields.id == 0; }, enumerable: false, configurable: false
+                get: function () { return _private[self._id].fields['id'] == 0; }, enumerable: false, configurable: false
             });
 
             Object.defineProperty(self, 'isLoaded', {
-                get: function () { return _private[self._id].fields.id != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
+                get: function () { return _private[self._id].fields['id'] != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
             });
             
             if(typeof data === 'object'){
@@ -62,6 +62,10 @@ var SeaORM = (function (angular) {
                 }
                 addProperty(this, field);
             }
+        },
+
+        updateId = function (obj) {
+            _private[obj._id].resourceObject['id'] = obj.getId();
         };
 
         SeaModel.prototype.getId = function () {
@@ -82,7 +86,7 @@ var SeaORM = (function (angular) {
                     js[field] = _private[this._id].fields[field];
                 }
             }
-            js.id = this.getId();
+            js['id'] = this.getId();
             return js;
         };
         
@@ -132,7 +136,7 @@ var SeaORM = (function (angular) {
         
         SeaModel.prototype.load = function (success_cb, error_cb) {
             var self = this;
-            _private[this._id].resourceObject = this._resource.get( { id: this.id }, function (value, responseHeaders) {
+            _private[this._id].resourceObject = this._resource.get( { 'id': this['id'] }, function (value, responseHeaders) {
                 self.set(value);
 
                 if(typeof success_cb === 'function'){
@@ -150,11 +154,11 @@ var SeaORM = (function (angular) {
             if(!this.isLoaded) {
                 var js = this.toJS();
                 if(this.isNew){
-                    delete js.id;
+                    delete js['id'];
                 }
                 _private[this._id].resourceObject = new this._resource(js);
             } else {
-                _private[this._id].resourceObject.id = this.getId();
+                updateId(this);
             }
 
             var _success_cb = function (value, responseHeaders) {
@@ -185,7 +189,7 @@ var SeaORM = (function (angular) {
                 if(!this.isLoaded){
                     _private[this._id].resourceObject = new this._resource(this.toJS());
                 }
-                _private[this._id].resourceObject.id = this.getId();
+                updateId(this);
 
                 _private[this._id].resourceObject.$remove(function (value, responseHeaders) {
                     if(typeof success_cb === 'function') {
@@ -231,7 +235,7 @@ var SeaORM = (function (angular) {
             Relational.prototype.toJS.call(this);
 
             if(!this.object) return null;
-            return this.object.id;
+            return this.object['id'];
         };
         
         BelongsTo.prototype.get = function (success_cb, error_cb) {
@@ -250,8 +254,8 @@ var SeaORM = (function (angular) {
 
             if (value === null || value instanceof this.model) {
                 this.object = value;
-            } else if (typeof value !== 'functoin' && value && (this.object == null || this.object.id != value)) {
-                this.object = new this.model({id: value});
+            } else if (typeof value !== 'functoin' && value && (this.object == null || this.object['id'] != value)) {
+                this.object = new this.model({ 'id': value });
             }
         };
         
@@ -299,7 +303,7 @@ var SeaORM = (function (angular) {
             if(!this.object) return null;
             var ids = [];
             for(var i = 0; i < this.object.length; i++) {
-                ids.push(this.object[i].id);
+                ids.push(this.object[i]['id']);
             }
             return ids;
         };
@@ -308,7 +312,7 @@ var SeaORM = (function (angular) {
             if(!this.object) return false;
 
             for(var i = 0; i < this.object.length; i++) {
-                if(this.object[i].id == id) return true;
+                if(this.object[i]['id'] == id) return true;
             }
 
             return false;
@@ -320,7 +324,7 @@ var SeaORM = (function (angular) {
             var self = this;
             if(!self.object) {
                 var params = {};
-                params[self.related_field] = self.instance.id;
+                params[self.related_field] = self.instance['id'];
                 self.object = self.model.query(params, function (value, responseHeaders) {
                     self.isLoaded = true;
                     self.execute_success_cb(value, responseHeaders)
@@ -346,7 +350,7 @@ var SeaORM = (function (angular) {
                     this.object = [];
                     this.isLoaded = true;
                 }
-                if (!this.has_object(value.id)) {
+                if (!this.has_object(value['id'])) {
                     this.object.push(value);
                 }
 
@@ -355,9 +359,9 @@ var SeaORM = (function (angular) {
                 var added = {};
                 this.object = new_object;
                 for(var i = 0; i < value.length; i++) {
-                    if(value[i] instanceof this.model && !added[value[i].id]) {
+                    if(value[i] instanceof this.model && !added[value[i]['id']]) {
                         new_object.push(value[i]);
-                        added[value[i].id] = true;
+                        added[value[i]['id']] = true;
                     }
                 }
                 this.isLoaded = true;
@@ -371,7 +375,7 @@ var SeaORM = (function (angular) {
                     this.isLoaded = true;
                 }
                 if (!this.has_object(value)) {
-                    this.object.push(new this.model({id: value}));
+                    this.object.push(new this.model({ 'id': value }));
                 }
 
             }
@@ -388,12 +392,12 @@ var SeaORM = (function (angular) {
                 return '/' + name.uncapitalize() + '/:id/';
             },
             methods: {
-                'get': {method: 'GET'},
-                'create': {method: 'POST'},
-                'update': {method: 'PUT'},
-                'query': {method: 'GET', isArray: true},
-                'remove': {method: 'DELETE'},
-                'delete': {method: 'DELETE'}
+                'get': { method: 'GET' },
+                'create': { method: 'POST' },
+                'update': { method: 'PUT' },
+                'query': { method: 'GET', isArray: true },
+                'remove': { method: 'DELETE' },
+                'delete': { method: 'DELETE' }
             }
         };
 
@@ -440,7 +444,7 @@ var SeaORM = (function (angular) {
             config = angular.extend({}, defaultConfig, config);
             
             var endpoint = self.prefixedEndpoint(config, declaration),
-            modelResource = $resource(endpoint, {id: '@id'}, config.methods);
+            modelResource = $resource(endpoint, { 'id': '@id' }, config.methods);
 
             var NewModel = function () {
                 var args = Array.prototype.slice.call(arguments);
@@ -490,7 +494,7 @@ var SeaORM = (function (angular) {
                     throw 'id argument is required';
                 }
 
-                var instance = new NewModel({id: id});
+                var instance = new NewModel({ 'id': id });
                 instance.load(success_cb, error_cb);
                 return instance;
             };
