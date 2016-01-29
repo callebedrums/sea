@@ -362,3 +362,18 @@ All instances will have methods as defined in the Model definition. You can call
 
 `.remove([success_cb [, error_cb]])`
 
+&nbsp;
+
+`.getId()`
+
+It is the id getter for the instance.
+It can be overwrited, declaring a method with same name in the Model definition.
+When overwriting it do not use `this.id` inside of it, once it calls the getter and would generate an infinite loop.
+
+&nbsp;
+
+`.setId()`
+
+it is the id setter for the instance.
+It can be overwrited, declaring a method with same name in the Model definition.
+When overwriting it do not use `this.id = ` inside of it, once it calls the setter and would generate an infinite loop.
