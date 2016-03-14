@@ -10,6 +10,8 @@ String.prototype.uncapitalize = function () {
 var SeaORM = (function (angular) {
     "use strict";
     var Models = {},
+
+    $q,
     
     addProperty = function (obj, name) {
         Object.defineProperty(obj, name, {
@@ -135,22 +137,33 @@ var SeaORM = (function (angular) {
         };
         
         SeaModel.prototype.load = function (success_cb, error_cb) {
-            var self = this;
+            var self = this,
+            deferred = $q.defer();
             _private[this._id].resourceObject = this._resource.get( { 'id': this['id'] }, function (value, responseHeaders) {
                 self.set(value);
 
                 if(typeof success_cb === 'function'){
                     success_cb(self, responseHeaders);
                 }
+
+                deferred.resolve(self, responseHeaders);
+                delete self.$promise;
             }, function (httpResponse) {
                 if(typeof error_cb === 'function') {
                     error_cb(httpResponse);
                 }
+
+                deferred.reject(httpResponse);
+                delete self.$promise;
             });
+
+            return self.$promise = deferred.promise;
         };
         
         SeaModel.prototype.save = function (success_cb, error_cb) {
-            var self = this;
+            var self = this,
+                deferred = $q.defer();
+
             if(!this.isLoaded) {
                 var js = this.toJS();
                 if(this.isNew){
@@ -167,11 +180,17 @@ var SeaORM = (function (angular) {
                 if(typeof success_cb === 'function') {
                     success_cb(self, responseHeaders);
                 }
+
+                deferred.resolve(self, responseHeaders);
+                delete self.$promise;
             },
             _error_cb = function (httpResponse) {
                 if(typeof error_cb === 'function') {
                     error_cb(httpResponse);
                 }
+
+                deferred.reject(httpResponse);
+                delete self.$promise;
             };
 
             if(this.isNew) {
@@ -180,11 +199,13 @@ var SeaORM = (function (angular) {
                 _private[this._id].resourceObject.$update(_success_cb, _error_cb);
             }
 
-            return self;
+            return self.$promise = deferred.promise;
         };
         
         SeaModel.prototype.remove = function (success_cb, error_cb) {
-            var self = this;
+            var self = this,
+                deferred = $q.defer();
+
             if(!this.isNew) {
                 if(!this.isLoaded){
                     _private[this._id].resourceObject = new this._resource(this.toJS());
@@ -195,16 +216,24 @@ var SeaORM = (function (angular) {
                     if(typeof success_cb === 'function') {
                         success_cb(self, responseHeaders);
                     }
+
+                    deferred.resolve(self, responseHeaders);
+                    delete self.$promise;
                 }, function (httpResponse) {
                     if(typeof error_cb === 'function') {
                         error_cb(httpResponse);
                     }
+
+                    deferred.reject(httpResponse);
+                    delete self.$promise;
                 });
+
+                return self.$promise = deferred.promise;
             }
         };
 
         return SeaModel;
-    }()),
+    } ()),
         
     Relational = (function () {
         var Relational = function (model, instance) {
@@ -221,7 +250,7 @@ var SeaORM = (function (angular) {
         Relational.prototype.toJS = function () { };
         
         return Relational
-    }()),
+    } ()),
     
     BelongsTo = (function () {
         var BelongsTo = function (model, instance) {
@@ -260,7 +289,7 @@ var SeaORM = (function (angular) {
         };
         
         return BelongsTo;
-    }()),
+    } ()),
     
     HasMany = (function () {
         var HasMany = function (model, instance, related_field) {
@@ -382,9 +411,10 @@ var SeaORM = (function (angular) {
         };
         
         return HasMany;
-    }()),
+    } ()),
 
-    SeaORM = function SeaORM($resource, config) {
+    SeaORM = function SeaORM($resource, $_q, config) {
+        $q = $_q
         var self = this,
         defaultConfig = {
             endpointPrefix: '',
@@ -444,7 +474,7 @@ var SeaORM = (function (angular) {
             config = angular.extend({}, defaultConfig, config);
             
             var endpoint = self.prefixedEndpoint(config, declaration),
-            modelResource = $resource(endpoint, { 'id': '@id' }, config.methods);
+                modelResource = $resource(endpoint, { 'id': '@id' }, config.methods);
 
             var NewModel = function () {
                 var args = Array.prototype.slice.call(arguments);
@@ -471,6 +501,7 @@ var SeaORM = (function (angular) {
                     params = {};
                 }
                 var result = [],
+                deferred = $q.defer(),
                 obj = null,
                 resources = modelResource.query(params, function (value, responseHeaders) {
                     for(var i = 0; i < resources.length; i++) {
@@ -480,11 +511,17 @@ var SeaORM = (function (angular) {
                     if(typeof success_cb == 'function'){
                         success_cb(result, responseHeaders);
                     }
+                    deferred.resolve(result, responseHeaders);
+                    delete result.$promise;
                 }, function (httpResponse) {
                     if(typeof error_cb == 'function' ) {
                         error_cb(httpResponse);
                     }
+                    deferred.reject(httpResponse);
+                    delete result.$promise;
                 });
+
+                result.$promise = deferred.promise;
 
                 return result;
             };
@@ -546,8 +583,8 @@ var SeaORM = (function (angular) {
         this.config = function (userConfig) {
             angular.extend(config, userConfig);
         };
-        this.$get = ['$resource', function seaModelFactory($resource) {
-            return new SeaORM($resource, config); 
+        this.$get = ['$resource', '$q', function seaModelFactory($resource, $q) {
+            return new SeaORM($resource, $q, config);
         }];
     });
 

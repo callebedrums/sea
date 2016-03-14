@@ -296,7 +296,9 @@ describe('Sea Test Suite', function () {
 
                     var result = MyModel.query();
 
-                    expect(result).to.eql([]);
+                    expect(result.length).to.equal(0);
+                    expect(result.$promise).to.not.be.undefined;
+                    result.$promise.then();
 
                     verifyBackendCall();
 
@@ -311,17 +313,19 @@ describe('Sea Test Suite', function () {
                     verifyBackendCall();
                 });
 
-                it('should call success callback when presented', function () {
+                it('should call success callback when presented and resolve the promise', function () {
                     $httpBackend.expect('GET', '/myModel').respond(200, [{id:1},{id:2}]);
                     var callback = sinon.spy();
                     var result = MyModel.query(callback);
+                    result.$promise.then(callback);
 
                     verifyBackendCall();
 
-                    expect(callback.calledWith(result)).to.be.true;
+                    expect(callback.withArgs(result).calledTwice).to.be.true;
+                    expect(result.$promise).to.be.undefined;
                 });
 
-                it('should call error callback when presented', function () {                    
+                it('should call error callback when presented and reject the promise', function () {                    
                     $httpBackend.expect('GET', '/myModel').respond(500);
 
                     var result = MyModel.query();
@@ -332,10 +336,12 @@ describe('Sea Test Suite', function () {
 
                     var callback = sinon.spy();
                     result = MyModel.query(function () {}, callback);
+                    result.$promise.catch(callback);
 
                     verifyBackendCall();
 
-                    expect(callback.calledOnce).to.be.true;
+                    expect(callback.calledTwice).to.be.true;
+                    expect(result.$promise).to.be.undefined;
                 });
             });
 
@@ -463,7 +469,12 @@ describe('Sea Test Suite', function () {
                         a: 3
                     });
 
-                    myModel.load();
+                    expect(myModel.$promise).to.be.undefined;
+
+                    var promise = myModel.load();
+
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(promise).be.equal(myModel.$promise);
 
                     verifyBackendCall();
 
@@ -488,11 +499,12 @@ describe('Sea Test Suite', function () {
                         a: 3
                     });
 
-                    myModel.load(spy);
+                    myModel.load(spy).then(spy);
 
                     verifyBackendCall();
 
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should call the error_cb when loading the instance', function () {
@@ -510,11 +522,12 @@ describe('Sea Test Suite', function () {
 
                     $httpBackend.expect('GET', '/myModel/1').respond(500);
 
-                    myModel.load(spy, spy2);
+                    myModel.load(spy, spy2).catch(spy2);
                     verifyBackendCall();
 
                     expect(spy.called).to.be.false;
-                    expect(spy2.called).to.be.true;
+                    expect(spy2.calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should save a new instance', function () {
@@ -539,7 +552,11 @@ describe('Sea Test Suite', function () {
                         a: null
                     });
 
-                    myModel.save();
+                    var promise = myModel.save();
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(myModel.$promise).to.equal(promise);
+
+
                     verifyBackendCall();
                     expect(myModel.id).to.equal(1);
                 });
@@ -566,9 +583,10 @@ describe('Sea Test Suite', function () {
                         a: null
                     });
 
-                    myModel.save(spy);
+                    myModel.save(spy).then(spy);
                     verifyBackendCall();
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
 
                     spy = sinon.spy();
                     $httpBackend.expect('PUT', '/myModel/1', {
@@ -594,26 +612,35 @@ describe('Sea Test Suite', function () {
                         a: null
                     }).respond(500);
 
-                    myModel.save(null, spy);
+                    myModel.save(null, spy).catch(spy);
                     verifyBackendCall();
-                    expect(spy.called).to.be.true;
+                    expect(spy.calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should remove the instance', function () {
                     var myModel = new MyModel();
                     var spy = sinon.spy();
-                    myModel.remove();
+                    var promise = myModel.remove();
+
+                    expect(promise).to.be.undefined;
 
                     myModel.id = 1;
 
                     $httpBackend.expect('DELETE', '/myModel/1').respond(200);
-                    myModel.remove();
+                    promise = myModel.remove();
                     verifyBackendCall();
 
                     $httpBackend.expect('DELETE', '/myModel/1').respond(200);
-                    myModel.remove(spy);
+                    var promise = myModel.remove(spy);
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(myModel.$promise).to.equal(promise);
+
+                    promise.then(spy);
+
                     verifyBackendCall();
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
 
                     spy = sinon.spy();
                     $httpBackend.expect('DELETE', '/myModel/1').respond(500);
@@ -623,9 +650,10 @@ describe('Sea Test Suite', function () {
 
                     spy = sinon.spy();
                     $httpBackend.expect('DELETE', '/myModel/1').respond(500);
-                    myModel.remove(null, spy);
+                    myModel.remove(null, spy).catch(spy);
                     verifyBackendCall();
-                    expect(spy.called).to.be.true;
+                    expect(spy.calledTwice).to.be.true;
+                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should define the getId method', function () {
