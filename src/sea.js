@@ -147,14 +147,12 @@ var SeaORM = (function (angular) {
                 }
 
                 deferred.resolve(self, responseHeaders);
-                delete self.$promise;
             }, function (httpResponse) {
                 if(typeof error_cb === 'function') {
                     error_cb(httpResponse);
                 }
 
                 deferred.reject(httpResponse);
-                delete self.$promise;
             });
 
             return self.$promise = deferred.promise;
@@ -182,7 +180,6 @@ var SeaORM = (function (angular) {
                 }
 
                 deferred.resolve(self, responseHeaders);
-                delete self.$promise;
             },
             _error_cb = function (httpResponse) {
                 if(typeof error_cb === 'function') {
@@ -190,7 +187,6 @@ var SeaORM = (function (angular) {
                 }
 
                 deferred.reject(httpResponse);
-                delete self.$promise;
             };
 
             if(this.isNew) {
@@ -218,14 +214,12 @@ var SeaORM = (function (angular) {
                     }
 
                     deferred.resolve(self, responseHeaders);
-                    delete self.$promise;
                 }, function (httpResponse) {
                     if(typeof error_cb === 'function') {
                         error_cb(httpResponse);
                     }
 
                     deferred.reject(httpResponse);
-                    delete self.$promise;
                 });
 
                 return self.$promise = deferred.promise;
@@ -512,13 +506,11 @@ var SeaORM = (function (angular) {
                         success_cb(result, responseHeaders);
                     }
                     deferred.resolve(result, responseHeaders);
-                    delete result.$promise;
                 }, function (httpResponse) {
                     if(typeof error_cb == 'function' ) {
                         error_cb(httpResponse);
                     }
                     deferred.reject(httpResponse);
-                    delete result.$promise;
                 });
 
                 result.$promise = deferred.promise;

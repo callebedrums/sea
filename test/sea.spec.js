@@ -322,7 +322,6 @@ describe('Sea Test Suite', function () {
                     verifyBackendCall();
 
                     expect(callback.withArgs(result).calledTwice).to.be.true;
-                    expect(result.$promise).to.be.undefined;
                 });
 
                 it('should call error callback when presented and reject the promise', function () {                    
@@ -341,7 +340,6 @@ describe('Sea Test Suite', function () {
                     verifyBackendCall();
 
                     expect(callback.calledTwice).to.be.true;
-                    expect(result.$promise).to.be.undefined;
                 });
             });
 
@@ -504,7 +502,6 @@ describe('Sea Test Suite', function () {
                     verifyBackendCall();
 
                     expect(spy.withArgs(myModel).calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should call the error_cb when loading the instance', function () {
@@ -527,7 +524,6 @@ describe('Sea Test Suite', function () {
 
                     expect(spy.called).to.be.false;
                     expect(spy2.calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should save a new instance', function () {
@@ -586,7 +582,6 @@ describe('Sea Test Suite', function () {
                     myModel.save(spy).then(spy);
                     verifyBackendCall();
                     expect(spy.withArgs(myModel).calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
 
                     spy = sinon.spy();
                     $httpBackend.expect('PUT', '/myModel/1', {
@@ -615,7 +610,6 @@ describe('Sea Test Suite', function () {
                     myModel.save(null, spy).catch(spy);
                     verifyBackendCall();
                     expect(spy.calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should remove the instance', function () {
@@ -640,7 +634,6 @@ describe('Sea Test Suite', function () {
 
                     verifyBackendCall();
                     expect(spy.withArgs(myModel).calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
 
                     spy = sinon.spy();
                     $httpBackend.expect('DELETE', '/myModel/1').respond(500);
@@ -653,7 +646,6 @@ describe('Sea Test Suite', function () {
                     myModel.remove(null, spy).catch(spy);
                     verifyBackendCall();
                     expect(spy.calledTwice).to.be.true;
-                    expect(myModel.$promise).to.be.undefined;
                 });
 
                 it('should define the getId method', function () {
