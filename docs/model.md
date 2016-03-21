@@ -301,28 +301,40 @@ In the case of a hasMany relationship attribute, its value have to be an array o
 
 &nbsp;
 
-`._endpoint`
+`.$endpoint`
 
 The read only endpoint configured to that instance. All instance of the same model have the same value for this attribute;
 
 &nbsp;
 
-`.isNew`
+`.$isNew`
 
 Read only attribute that indicates if the instance is new or note. In other words, it indicates if there is an server resource corresponding to the instance.
 Basically, it indicates if the id is equal zero.
 
 &nbsp;
 
-`.isLoaded`
+`.$isLoaded`
 
 Read only attribute that indicates if the instace is loaded. It may have an id setted to id, but was not loaded from the server yet.
 
 &nbsp;
 
-`.modelName`
+`.$modelName`
 
 Read only attribute that identify the Model name of the instance. You can use this attribute to identify the instances and handle them properly.
+
+&nbsp;
+
+`.$promise`
+
+Read only attribute that represents the promise for the last backend call. Collections retarned by the `query` method have this attribute as well.
+
+&nbsp;
+
+`.$calling`
+
+Read only attribute that indicates when a backend call is in progress for the instance. Collections retarned by the `query` method have this attribute as well.
 
 &nbsp;
 

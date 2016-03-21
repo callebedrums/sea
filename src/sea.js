@@ -35,17 +35,19 @@ var SeaORM = (function (angular) {
             
             Object.defineProperty(self, '_id', { value: object_id++, writable: false, enumerable: false, configurable: false });
             Object.defineProperty(self, '_resource', { value: resource, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(self, '$promise', { value: undefined, writable: true, enumerable: false, configurable: false });
+            Object.defineProperty(self, '$calling', { value: false, writable: true, enumerable: false, configurable: false });
             
             _private[this._id] = {
                 fields: angular.extend({ 'id': 0 }, declaration.fields),
                 resourceObject: null
             };
             
-            Object.defineProperty(self, 'isNew', {
+            Object.defineProperty(self, '$isNew', {
                 get: function () { return _private[self._id].fields['id'] == 0; }, enumerable: false, configurable: false
             });
 
-            Object.defineProperty(self, 'isLoaded', {
+            Object.defineProperty(self, '$isLoaded', {
                 get: function () { return _private[self._id].fields['id'] != 0 && _private[self._id].resourceObject !== null; }, enumerable: false, configurable: false
             });
             
@@ -76,7 +78,7 @@ var SeaORM = (function (angular) {
 
         SeaModel.prototype.setId = function (id) {
             _private[this._id].fields['id'] = id
-            if(this.isLoaded) _private[this._id].resourceObject['id'] = id;
+            if(this.$isLoaded) _private[this._id].resourceObject['id'] = id;
         };
         
         SeaModel.prototype.toJS = function () {
@@ -118,10 +120,10 @@ var SeaORM = (function (angular) {
             if(typeof field === 'string' && field in _private[this._id].fields) {
                 if (_private[this._id].fields[field] != null && _private[this._id].fields[field] instanceof Relational) {
                     _private[this._id].fields[field].set(value);
-                    if(this.isLoaded) _private[this._id].resourceObject[field] = _private[this._id].fields[field].toJS();
+                    if(this.$isLoaded) _private[this._id].resourceObject[field] = _private[this._id].fields[field].toJS();
                 } else if (typeof _private[this._id].fields[field] !== 'function') {
                     _private[this._id].fields[field] = value;
-                    if(this.isLoaded) _private[this._id].resourceObject[field] = value;
+                    if(this.$isLoaded) _private[this._id].resourceObject[field] = value;
                 }
             } else if (typeof field === 'object') {
                 this.setFields(field);
@@ -139,21 +141,25 @@ var SeaORM = (function (angular) {
         SeaModel.prototype.load = function (success_cb, error_cb) {
             var self = this,
             deferred = $q.defer();
-            _private[this._id].resourceObject = this._resource.get( { 'id': this['id'] }, function (value, responseHeaders) {
+            _private[self._id].resourceObject = self._resource.get( { 'id': self['id'] }, function (value, responseHeaders) {
                 self.set(value);
 
                 if(typeof success_cb === 'function'){
                     success_cb(self, responseHeaders);
                 }
 
+                self.$calling = false;
                 deferred.resolve(self, responseHeaders);
             }, function (httpResponse) {
                 if(typeof error_cb === 'function') {
                     error_cb(httpResponse);
                 }
 
+                self.$calling = false;
                 deferred.reject(httpResponse);
             });
+
+            self.$calling = true;
 
             return self.$promise = deferred.promise;
         };
@@ -162,14 +168,14 @@ var SeaORM = (function (angular) {
             var self = this,
                 deferred = $q.defer();
 
-            if(!this.isLoaded) {
-                var js = this.toJS();
-                if(this.isNew){
+            if(!self.$isLoaded) {
+                var js = self.toJS();
+                if(self.$isNew){
                     delete js['id'];
                 }
-                _private[this._id].resourceObject = new this._resource(js);
+                _private[self._id].resourceObject = new self._resource(js);
             } else {
-                updateId(this);
+                updateId(self);
             }
 
             var _success_cb = function (value, responseHeaders) {
@@ -179,6 +185,7 @@ var SeaORM = (function (angular) {
                     success_cb(self, responseHeaders);
                 }
 
+                self.$calling = false;
                 deferred.resolve(self, responseHeaders);
             },
             _error_cb = function (httpResponse) {
@@ -186,14 +193,17 @@ var SeaORM = (function (angular) {
                     error_cb(httpResponse);
                 }
 
+                self.$calling = false;
                 deferred.reject(httpResponse);
             };
 
-            if(this.isNew) {
-                _private[this._id].resourceObject.$create(_success_cb, _error_cb);
+            if(self.$isNew) {
+                _private[self._id].resourceObject.$create(_success_cb, _error_cb);
             } else {
-                _private[this._id].resourceObject.$update(_success_cb, _error_cb);
+                _private[self._id].resourceObject.$update(_success_cb, _error_cb);
             }
+
+            self.$calling = true;
 
             return self.$promise = deferred.promise;
         };
@@ -202,25 +212,29 @@ var SeaORM = (function (angular) {
             var self = this,
                 deferred = $q.defer();
 
-            if(!this.isNew) {
-                if(!this.isLoaded){
-                    _private[this._id].resourceObject = new this._resource(this.toJS());
+            if(!self.$isNew) {
+                if(!self.$isLoaded){
+                    _private[self._id].resourceObject = new self._resource(self.toJS());
                 }
-                updateId(this);
+                updateId(self);
 
-                _private[this._id].resourceObject.$remove(function (value, responseHeaders) {
+                _private[self._id].resourceObject.$remove(function (value, responseHeaders) {
                     if(typeof success_cb === 'function') {
                         success_cb(self, responseHeaders);
                     }
 
+                    self.$calling = false;
                     deferred.resolve(self, responseHeaders);
                 }, function (httpResponse) {
                     if(typeof error_cb === 'function') {
                         error_cb(httpResponse);
                     }
 
+                    self.$calling = false;
                     deferred.reject(httpResponse);
                 });
+
+                self.$calling = true;
 
                 return self.$promise = deferred.promise;
             }
@@ -264,7 +278,7 @@ var SeaORM = (function (angular) {
         BelongsTo.prototype.get = function (success_cb, error_cb) {
             Relational.prototype.get.call(this, success_cb, error_cb);
 
-            if(this.object && !this.object.isNew && !this.object.isLoaded) {
+            if(this.object && !this.object.$isNew && !this.object.$isLoaded) {
                 this.object.load(success_cb, error_cb);
             } else {
                 if (typeof success_cb === 'function') success_cb(this.object);
@@ -289,7 +303,7 @@ var SeaORM = (function (angular) {
         var HasMany = function (model, instance, related_field) {
             Relational.call(this, model, instance);
             this.related_field = related_field;
-            this.isLoaded = false;
+            this.$isLoaded = false;
             this.loading_success_cb = [];
             this.loading_error_cb = [];
         };
@@ -349,7 +363,7 @@ var SeaORM = (function (angular) {
                 var params = {};
                 params[self.related_field] = self.instance['id'];
                 self.object = self.model.query(params, function (value, responseHeaders) {
-                    self.isLoaded = true;
+                    self.$isLoaded = true;
                     self.execute_success_cb(value, responseHeaders)
                 }, function (httpResponse) {
                     self.execute_error_cb(httpResponse);
@@ -358,7 +372,7 @@ var SeaORM = (function (angular) {
             
             self.register_callbacks(success_cb, error_cb);
 
-            if(self.isLoaded) {
+            if(self.$isLoaded) {
                 self.execute_success_cb(self.object);
             }
             
@@ -371,7 +385,7 @@ var SeaORM = (function (angular) {
             if (value instanceof this.model) {
                 if(!this.object) {
                     this.object = [];
-                    this.isLoaded = true;
+                    this.$isLoaded = true;
                 }
                 if (!this.has_object(value['id'])) {
                     this.object.push(value);
@@ -387,15 +401,15 @@ var SeaORM = (function (angular) {
                         added[value[i]['id']] = true;
                     }
                 }
-                this.isLoaded = true;
+                this.$isLoaded = true;
 
             } else if (value === null) {
                 this.object = null;
-                this.isLoaded = false;
+                this.$isLoaded = false;
             } else if (typeof value !== 'function' && value) {
                 if(!this.object) {
                     this.object = [];
-                    this.isLoaded = true;
+                    this.$isLoaded = true;
                 }
                 if (!this.has_object(value)) {
                     this.object.push(new this.model({ 'id': value }));
@@ -479,8 +493,8 @@ var SeaORM = (function (angular) {
             NewModel.prototype = Object.create(SeaModel.prototype);
             NewModel.prototype.constructor = NewModel;
             
-            Object.defineProperty(NewModel.prototype, '_endpoint', { value: endpoint, writable: false, enumerable: false, configurable: false });
-            Object.defineProperty(NewModel.prototype, '_modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(NewModel.prototype, '$endpoint', { value: endpoint, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(NewModel.prototype, '$modelName', { value: declaration.name, writable: false, enumerable: false, configurable: false });
 
             for(var m in declaration.methods) {
                 if(typeof declaration.methods[m] === 'function') {
@@ -505,15 +519,18 @@ var SeaORM = (function (angular) {
                     if(typeof success_cb == 'function'){
                         success_cb(result, responseHeaders);
                     }
+                    result.$calling = false;
                     deferred.resolve(result, responseHeaders);
                 }, function (httpResponse) {
                     if(typeof error_cb == 'function' ) {
                         error_cb(httpResponse);
                     }
+                    result.$calling = false;
                     deferred.reject(httpResponse);
                 });
 
                 result.$promise = deferred.promise;
+                result.$calling = true;
 
                 return result;
             };
