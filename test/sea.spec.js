@@ -212,19 +212,19 @@ describe('Sea Test Suite', function () {
                 assert.isFunction(MyModel, 'MyModel is not a function');
             });
 
-            it('should define an _endpoint prototype attribute', function () {
+            it('should define an $endpoint prototype attribute', function () {
                 mock.expects('prefixedEndpoint').returns('/endpoint/:id/');
 
                 var MyModel = $seaModel.newModel(declaration);
 
                 mock.verify();
 
-                expect(MyModel.prototype._endpoint).to.equal('/endpoint/:id/');
+                expect(MyModel.prototype.$endpoint).to.equal('/endpoint/:id/');
             });
 
-            it('should define an _modelName prototype attribute', function () {
+            it('should define an $modelName prototype attribute', function () {
                 var MyModel = $seaModel.newModel(declaration);
-                expect(MyModel.prototype._modelName).to.equal('MyModel');
+                expect(MyModel.prototype.$modelName).to.equal('MyModel');
             });
 
             it('should define the methods defined in the declaration parameter', function () {
@@ -296,11 +296,15 @@ describe('Sea Test Suite', function () {
 
                     var result = MyModel.query();
 
-                    expect(result).to.eql([]);
+                    expect(result.length).to.equal(0);
+                    expect(result.$promise).to.not.be.undefined;
+                    expect(result.$calling).to.be.true;
+                    result.$promise.then();
 
                     verifyBackendCall();
 
                     expect(result.length).to.equal(2);
+                    expect(result.$calling).to.be.false;
                 });
 
                 it('should pass the parameters as query string', function () {
@@ -311,17 +315,18 @@ describe('Sea Test Suite', function () {
                     verifyBackendCall();
                 });
 
-                it('should call success callback when presented', function () {
+                it('should call success callback when presented and resolve the promise', function () {
                     $httpBackend.expect('GET', '/myModel').respond(200, [{id:1},{id:2}]);
                     var callback = sinon.spy();
                     var result = MyModel.query(callback);
+                    result.$promise.then(callback);
 
                     verifyBackendCall();
 
-                    expect(callback.calledWith(result)).to.be.true;
+                    expect(callback.withArgs(result).calledTwice).to.be.true;
                 });
 
-                it('should call error callback when presented', function () {                    
+                it('should call error callback when presented and reject the promise', function () {                    
                     $httpBackend.expect('GET', '/myModel').respond(500);
 
                     var result = MyModel.query();
@@ -332,10 +337,12 @@ describe('Sea Test Suite', function () {
 
                     var callback = sinon.spy();
                     result = MyModel.query(function () {}, callback);
+                    result.$promise.catch(callback);
 
                     verifyBackendCall();
 
-                    expect(callback.calledOnce).to.be.true;
+                    expect(callback.calledTwice).to.be.true;
+                    expect(result.$calling).to.be.false;
                 });
             });
 
@@ -373,11 +380,11 @@ describe('Sea Test Suite', function () {
                     expect(myModel.rid).to.equal(3);
                 });
 
-                it('should define the isNew and isLoaded attribute', function () {
+                it('should define the $isNew and $isLoaded attribute', function () {
                     var myModel = new MyModel();
 
-                    expect(myModel.isNew).to.be.defined;
-                    expect(myModel.isLoaded).to.be.defined;
+                    expect(myModel.$isNew).to.not.be.undefined;
+                    expect(myModel.$isLoaded).to.not.be.undefined;
                 });
 
                 it('should initialize the id', function () {
@@ -463,7 +470,13 @@ describe('Sea Test Suite', function () {
                         a: 3
                     });
 
-                    myModel.load();
+                    expect(myModel.$promise).to.be.undefined;
+
+                    var promise = myModel.load();
+
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(promise).be.equal(myModel.$promise);
+                    expect(myModel.$calling).to.be.true;
 
                     verifyBackendCall();
 
@@ -473,6 +486,7 @@ describe('Sea Test Suite', function () {
                     expect(myModel.sub).to.eql({ subattr: 'abc' });
                     expect(myModel.rid).to.equal(5);
                     expect(myModel.a.id).to.equal(3);
+                    expect(myModel.$calling).to.be.false;
                 });
 
                 it('should call the success_cb when loading the instance', function () {
@@ -488,11 +502,11 @@ describe('Sea Test Suite', function () {
                         a: 3
                     });
 
-                    myModel.load(spy);
+                    myModel.load(spy).then(spy);
 
                     verifyBackendCall();
 
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
                 });
 
                 it('should call the error_cb when loading the instance', function () {
@@ -507,14 +521,15 @@ describe('Sea Test Suite', function () {
 
                     expect(spy.called).to.be.false;
                     expect(spy2.called).to.be.false;
+                    expect(myModel.$calling).to.be.false;
 
                     $httpBackend.expect('GET', '/myModel/1').respond(500);
 
-                    myModel.load(spy, spy2);
+                    myModel.load(spy, spy2).catch(spy2);
                     verifyBackendCall();
 
                     expect(spy.called).to.be.false;
-                    expect(spy2.called).to.be.true;
+                    expect(spy2.calledTwice).to.be.true;
                 });
 
                 it('should save a new instance', function () {
@@ -539,9 +554,15 @@ describe('Sea Test Suite', function () {
                         a: null
                     });
 
-                    myModel.save();
+                    var promise = myModel.save();
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(myModel.$promise).to.equal(promise);
+                    expect(myModel.$calling).to.be.true;
+
+
                     verifyBackendCall();
                     expect(myModel.id).to.equal(1);
+                    expect(myModel.$calling).to.be.false;
                 });
 
                 it('should update the instance', function () {
@@ -566,9 +587,9 @@ describe('Sea Test Suite', function () {
                         a: null
                     });
 
-                    myModel.save(spy);
+                    myModel.save(spy).then(spy);
                     verifyBackendCall();
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
 
                     spy = sinon.spy();
                     $httpBackend.expect('PUT', '/myModel/1', {
@@ -583,6 +604,7 @@ describe('Sea Test Suite', function () {
                     myModel.save(spy);
                     verifyBackendCall();
                     expect(spy.called).to.be.false;
+                    expect(myModel.$calling).to.be.false;
 
                     spy = sinon.spy();
                     $httpBackend.expect('PUT', '/myModel/1', {
@@ -594,38 +616,48 @@ describe('Sea Test Suite', function () {
                         a: null
                     }).respond(500);
 
-                    myModel.save(null, spy);
+                    myModel.save(null, spy).catch(spy);
                     verifyBackendCall();
-                    expect(spy.called).to.be.true;
+                    expect(spy.calledTwice).to.be.true;
                 });
 
                 it('should remove the instance', function () {
                     var myModel = new MyModel();
                     var spy = sinon.spy();
-                    myModel.remove();
+                    var promise = myModel.remove();
+
+                    expect(promise).to.be.undefined;
 
                     myModel.id = 1;
 
                     $httpBackend.expect('DELETE', '/myModel/1').respond(200);
-                    myModel.remove();
+                    promise = myModel.remove();
                     verifyBackendCall();
 
                     $httpBackend.expect('DELETE', '/myModel/1').respond(200);
-                    myModel.remove(spy);
+                    var promise = myModel.remove(spy);
+                    expect(myModel.$promise).to.not.be.undefined;
+                    expect(myModel.$promise).to.equal(promise);
+                    expect(myModel.$calling).to.be.true;
+
+                    promise.then(spy);
+
                     verifyBackendCall();
-                    expect(spy.calledWith(myModel)).to.be.true;
+                    expect(spy.withArgs(myModel).calledTwice).to.be.true;
+                    expect(myModel.$calling).to.be.false;
 
                     spy = sinon.spy();
                     $httpBackend.expect('DELETE', '/myModel/1').respond(500);
                     myModel.remove(spy);
                     verifyBackendCall();
                     expect(spy.called).to.be.false;
+                    expect(myModel.$calling).to.be.false;
 
                     spy = sinon.spy();
                     $httpBackend.expect('DELETE', '/myModel/1').respond(500);
-                    myModel.remove(null, spy);
+                    myModel.remove(null, spy).catch(spy);
                     verifyBackendCall();
-                    expect(spy.called).to.be.true;
+                    expect(spy.calledTwice).to.be.true;
                 });
 
                 it('should define the getId method', function () {
@@ -735,13 +767,13 @@ describe('Sea Test Suite', function () {
             	var instance = {};
             	var belongsToObj = $seaModel.belongsTo('Test')(instance);
 
-            	expect(belongsToObj.instance).to.be.defined;
+            	expect(belongsToObj.instance).to.not.be.undefined;
             	expect(belongsToObj.instance).to.equal(instance);
 
-            	expect(belongsToObj.model).to.be.defined;
+            	expect(belongsToObj.model).to.not.be.undefined;
             	expect(belongsToObj.model).to.equal(TestModel);
 
-            	expect(belongsToObj.object).to.be.defined;
+            	expect(belongsToObj.object).to.not.be.undefined;
             	expect(belongsToObj.object).to.be.null;
             });
 
@@ -758,8 +790,8 @@ describe('Sea Test Suite', function () {
             	var scb = function () {};
             	var ecb = function () {};
             	var obj = {
-            		isNew: false,
-            		isLoaded: false,
+            		$isNew: false,
+            		$isLoaded: false,
             		load: sinon.spy()
             	};
 
@@ -773,8 +805,8 @@ describe('Sea Test Suite', function () {
             	var belongsToObj = $seaModel.belongsTo('Test')({});
             	var scb = sinon.spy();
             	var obj = {
-            		isNew: true,
-            		isLoaded: true,
+            		$isNew: true,
+            		$isLoaded: true,
             		load: sinon.spy()
             	};
             	belongsToObj.object = obj;
@@ -790,7 +822,7 @@ describe('Sea Test Suite', function () {
             	belongsToObj.object = obj;
 
             	belongsToObj.set('1');
-            	expect(belongsToObj.object).to.be.defined;
+            	expect(belongsToObj.object).to.not.be.undefined;
 
             	belongsToObj.set(null);
             	expect(belongsToObj.object).to.be.null;
@@ -896,7 +928,7 @@ describe('Sea Test Suite', function () {
                 var spy = sinon.spy();
                 hasManyObj.object = obj;
                 hasManyObj.execute_success_cb = spy;
-                hasManyObj.isLoaded = true;
+                hasManyObj.$isLoaded = true;
 
                 expect(hasManyObj.get()).to.equal(obj);
                 expect(spy.calledWith(obj)).to.be.true;
@@ -904,10 +936,12 @@ describe('Sea Test Suite', function () {
 
             it('should load the object', function () {
                 var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
-                var spy = sinon.spy();
+                var spy = sinon.spy(function () {
+                    return {};
+                });
                 TestModel.query = spy;
 
-                expect(hasManyObj.get()).to.be.defined;
+                expect(hasManyObj.get()).to.not.be.undefined;
                 expect(spy.called).to.be.true;
             });
 
@@ -918,6 +952,7 @@ describe('Sea Test Suite', function () {
                     p = _p;
                     scb = _scb;
                     ecb = _ecb;
+                    return {};
                 });
                 var sSpy = sinon.spy();
                 var eSpy = sinon.spy();
@@ -928,15 +963,15 @@ describe('Sea Test Suite', function () {
                 hasManyObj.execute_success_cb = sSpy;
                 hasManyObj.execute_error_cb = eSpy;
 
-                expect(hasManyObj.get()).to.be.defined;
+                expect(hasManyObj.get()).to.not.be.undefined;
                 expect(p).to.eql({ r_field:1 });
                 expect(scb).to.be.instanceof(Function);
                 expect(ecb).to.be.instanceof(Function);
 
-                expect(hasManyObj.isLoaded).to.be.false;
+                expect(hasManyObj.$isLoaded).to.be.false;
                 scb(val, rh);
                 expect(sSpy.calledWith(val, rh)).to.be.true;
-                expect(hasManyObj.isLoaded).to.be.true;
+                expect(hasManyObj.$isLoaded).to.be.true;
 
                 ecb(rh);
                 expect(eSpy.calledWith(rh)).to.be.true;
@@ -955,7 +990,7 @@ describe('Sea Test Suite', function () {
                 var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
 
                 expect(hasManyObj.object).to.be.null;
-                expect(hasManyObj.isLoaded).to.be.false;
+                expect(hasManyObj.$isLoaded).to.be.false;
 
                 hasManyObj.set(1);
                 expect(hasManyObj.object).to.be.instanceof(Array);
@@ -963,7 +998,7 @@ describe('Sea Test Suite', function () {
                 expect(hasManyObj.object[0]).to.be.instanceof(TestModel);
                 expect(hasManyObj.object[0].id).to.equal(1);
 
-                expect(hasManyObj.isLoaded).to.be.true;
+                expect(hasManyObj.$isLoaded).to.be.true;
 
                 hasManyObj.set(2);
                 expect(hasManyObj.object).to.be.instanceof(Array);
@@ -985,14 +1020,14 @@ describe('Sea Test Suite', function () {
                 var m2 = new TestModel({id: 2});
 
                 expect(hasManyObj.object).to.be.null;
-                expect(hasManyObj.isLoaded).to.be.false;
+                expect(hasManyObj.$isLoaded).to.be.false;
 
                 hasManyObj.set(m1);
                 expect(hasManyObj.object).to.be.instanceof(Array);
                 expect(hasManyObj.object.length).to.equal(1);
                 expect(hasManyObj.object[0]).to.equal(m1);
 
-                expect(hasManyObj.isLoaded).to.be.true;
+                expect(hasManyObj.$isLoaded).to.be.true;
 
                 hasManyObj.set(m2);
                 expect(hasManyObj.object).to.be.instanceof(Array);
@@ -1014,11 +1049,11 @@ describe('Sea Test Suite', function () {
                 var arr = [1, 2, "teste", m1, m2, m3];
 
                 expect(hasManyObj.object).to.be.null;
-                expect(hasManyObj.isLoaded).to.be.false;
+                expect(hasManyObj.$isLoaded).to.be.false;
 
                 hasManyObj.set(arr);
 
-                expect(hasManyObj.isLoaded).to.be.true;
+                expect(hasManyObj.$isLoaded).to.be.true;
                 expect(hasManyObj.object).to.be.instanceof(Array);
                 expect(hasManyObj.object.length).to.equal(2);
                 expect(hasManyObj.object).to.eql([m1, m2]);
@@ -1027,11 +1062,11 @@ describe('Sea Test Suite', function () {
             it('should set the object value to null', function () {
                 var hasManyObj = $seaModel.hasMany('Test', 'r_field')({});
                 hasManyObj.object = [];
-                hasManyObj.isLoaded = true;
+                hasManyObj.$isLoaded = true;
 
                 hasManyObj.set(null);
                 expect(hasManyObj.object).to.be.null;
-                expect(hasManyObj.isLoaded).to.be.false;
+                expect(hasManyObj.$isLoaded).to.be.false;
             });
 
             it('should register callbacks', function () {

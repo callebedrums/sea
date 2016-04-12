@@ -1,6 +1,6 @@
 {
   "name": "seaModel",
-  "version": "1.1.1",
+  "version": "2.0.1",
   "description": "An AngularJs Framework to manage resources served by a REST service, and also an ORM to define models and their relationships.",
   "keywords": [
     "seaModel",
