@@ -2,16 +2,24 @@
  * @author: Callebe Gomes
  * */
 
-
-String.prototype.uncapitalize = function () {
-    return this.charAt(0).toLowerCase() + this.slice(1);
-};
-
-var SeaORM = (function (angular) {
+(function (root, factory) {
+    'use strict';
+    if (typeof module === 'object' && module.exports) {
+        module.exports = factory(require('angular'), require('angular-resource'));
+    } else if(typeof define === 'function' && define.amd) {
+        define(['angular', 'angular-resource'], factory);
+    } else {
+        root.SeaORM = factory(root.angular);
+    }
+} (this, function (angular) {
     "use strict";
     var Models = {},
 
     $q,
+
+    uncapitalize = function () {
+        return this.charAt(0).toLowerCase() + this.slice(1);
+    },
     
     addProperty = function (obj, name) {
         Object.defineProperty(obj, name, {
@@ -427,7 +435,7 @@ var SeaORM = (function (angular) {
         defaultConfig = {
             endpointPrefix: '',
             endpoint: function (name) {
-                return '/' + name.uncapitalize() + '/:id/';
+                return '/' + uncapitalize.apply(name) + '/:id/';
             },
             methods: {
                 'get': { method: 'GET' },
@@ -586,7 +594,7 @@ var SeaORM = (function (angular) {
     };
 
     
-    angular.module('seaModel', ['ngResource'])
+    return angular.module('seaModel', ['ngResource'])
     .provider('$seaModel', function seaModelProvider() {
         var config = {};
         this.config = function (userConfig) {
@@ -596,6 +604,4 @@ var SeaORM = (function (angular) {
             return new SeaORM($resource, $q, config);
         }];
     });
-
-    return SeaORM;
-}) (angular);
+}));

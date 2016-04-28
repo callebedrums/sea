@@ -1,17 +1,4 @@
 
-describe("String test suite", function () {
-
-    it('should define the uncapitalize method', function () {
-        assert.isDefined(String.prototype.uncapitalize, 'String.prototype.uncapitalize method is not defined');
-        assert.isFunction(String.prototype.uncapitalize, 'String.prototype.uncapitalize is not a function');
-    });
-
-    it('should return the uncapitalized string', function () {
-        expect(('Callebe').uncapitalize()).to.equal('callebe');
-        expect(('callebe').uncapitalize()).to.equal('callebe');
-    })
-});
-
 describe('Sea Test Suite', function () {
 
     beforeEach(module('seaModel'));
