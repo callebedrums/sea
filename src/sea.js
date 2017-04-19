@@ -4,14 +4,16 @@
 
 (function (root, factory) {
     'use strict';
+    /* istanbul ignore if  */
     if (typeof module === 'object' && module.exports) {
-        module.exports = factory(require('angular'));
+        module.exports = factory();
+    /* istanbul ignore if  */
     } else if(typeof define === 'function' && define.amd) {
-        define(['angular'], factory);
+        define(factory);
     } else {
-        root.SeaORM = factory(root.angular);
+        root.Sea = factory();
     }
-} (this, function (angular) {
+} (this, function () {
     "use strict";
 
     var uncapitalize = function () {
@@ -48,12 +50,33 @@
      * Sea Model Manager
      * */
     var SeaModelManager = function () {
+        /** self referency to be used internaly */
         var self = this;
+
+        /** $http - the XMLHttpRequest service like angular service */
+        var $http;
+
+        /** $q - the promise service like angular service */
+        var $q;
+
+        /** holds the user default config */
         var config = {};
+
+        /** holds the global default config */
         var defaultConfig = {
             endpointPrefix: '',
             endpoint: function (name) {
                 return '/' + uncapitalize.apply(name) + '/:id';
+            },
+            actions: {
+                'get': { method: 'GET' },
+                'create': { method: 'POST' },
+                'update': { method: 'PUT' },
+                'query': { method: 'GET', isArray: true },
+                'remove': { method: 'DELETE' },
+                'delete': { method: 'DELETE' }
+                /** extra actions */
+                // 'action-name': { method: 'METHOD', isArray: boolean, sufix: 'SUFIX|optional'}
             }
         };
 
@@ -62,6 +85,20 @@
             return angular.extend({}, defaultConfig, config, _config);
         };
 
+        /**
+         * Setter and Getter for the user default config.
+         *
+         * When a setter, it sets the user default config.
+         * When a getter, it returns the merged config between
+         * user default config and global default config.
+         * The user config has precedence over global config.
+         *
+         * @param config {Object} - optional. Setter when provided. Getter when not provided
+         *
+         * @returns Object - it self when a setter. config when a getter
+         *
+         * SeaNodelManager.config([config]);
+         * */
         this.config = function (_config) {
             if (_config) {
                 angular.extend(config, _config);
@@ -71,14 +108,29 @@
             return fullConfig();
         };
 
-        this.$get = [function () {
+        /**
+         * create a new Model
+         *
+         * @param config {Object} - the new model configuration and definition
+         *
+         * @returns Class - returns the new model class
+         * */
+        this.newModel = function (config) {
+            if(typeof config !== 'object') {
+                throw 'config should be an object';
+            }
+            if(typeof config.name !== 'string') {
+                throw 'config should define a string name attribute';
+            }
+        };
+
+        this.$get = ['$http', '$q', function (_$http, _$q) {
             return self;
         }];
     };
 
-    var module = angular.module('sea', []);
-
-    module.provider('SeaModelManager', SeaModelManager);
-
-    return module;
+    return {
+        ModelManager: SeaModelManager,
+        Model: SeaModel
+    };
 }));

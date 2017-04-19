@@ -1,0 +1,21 @@
+
+(function (root, factory) {
+    'use strict';
+    /* istanbul ignore if  */
+    if (typeof module === 'object' && module.exports) {
+        module.exports = factory(require('./sea'), require('angular'));
+    /* istanbul ignore if  */
+    } else if(typeof define === 'function' && define.amd) {
+        define(['./sea', 'angular'], factory);
+    } else {
+        root.SeaAngularModule = factory(root.Sea, root.angular);
+    }
+} (this, function (Sea, angular) {
+    "use strict";
+
+    var module = angular.module('sea', []);
+
+    module.provider('SeaModelManager', Sea.ModelManager);
+
+    return module;
+}));
