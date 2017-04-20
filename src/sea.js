@@ -2,6 +2,33 @@
  * @author: Callebe Gomes
  * */
 
+ /* istanbul ignore else  */
+if (typeof Object.assign != 'function') {
+    /* istanbul ignore next  */
+    Object.assign = function(target, varArgs) { // .length of function is 2
+        'use strict';
+        if (target == null) { // TypeError if undefined or null
+            throw new TypeError('Cannot convert undefined or null to object');
+        }
+
+        var to = Object(target);
+
+        for (var index = 1; index < arguments.length; index++) {
+            var nextSource = arguments[index];
+
+            if (nextSource != null) { // Skip over if undefined or null
+                for (var nextKey in nextSource) {
+                    // Avoid bugs when hasOwnProperty is shadowed
+                    if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+        }
+        return to;
+    };
+}
+
 (function (root, factory) {
     'use strict';
     /* istanbul ignore if  */
@@ -43,7 +70,7 @@
         };
 
         return SeaModel;
-    });
+    }) ();
 
 
     /**
@@ -52,6 +79,11 @@
     var SeaModelManager = function () {
         /** self referency to be used internaly */
         var self = this;
+
+        /** holds the models definitions */
+        var Models = {
+            length: 0
+        };
 
         /** $http - the XMLHttpRequest service like angular service */
         var $http;
@@ -82,7 +114,7 @@
 
         var fullConfig = function (_config) {
             _config = _config || {};
-            return angular.extend({}, defaultConfig, config, _config);
+            return Object.assign({}, defaultConfig, config, _config);
         };
 
         /**
@@ -101,11 +133,18 @@
          * */
         this.config = function (_config) {
             if (_config) {
-                angular.extend(config, _config);
+                Object.assign(config, _config);
                 return self;
             }
 
             return fullConfig();
+        };
+
+        /**
+         *
+         * */
+        this.getModels = function (model) {
+            return Object.assign({}, Models);
         };
 
         /**
@@ -116,12 +155,28 @@
          * @returns Class - returns the new model class
          * */
         this.newModel = function (config) {
-            if(typeof config !== 'object') {
+            if (typeof config !== 'object') {
                 throw 'config should be an object';
             }
-            if(typeof config.name !== 'string') {
+            if (typeof config.name !== 'string') {
                 throw 'config should define a string name attribute';
             }
+            if (Models[config.name]) {
+                throw 'redefining model is not allowed. ' + config.name + ' is already defined';
+            }
+
+            var NewModel = function () {
+
+            };
+
+            NewModel.prototype = Object.create(SeaModel.prototype);
+            NewModel.prototype.constructor = NewModel;
+            NewModel.prototype.$config = NewModel.$config = fullConfig(config);
+
+            Models[config.name] = NewModel;
+            Models.length++;
+
+            return NewModel;
         };
 
         this.$get = ['$http', '$q', function (_$http, _$q) {
