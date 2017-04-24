@@ -65,8 +65,51 @@ if (typeof Object.assign != 'function') {
      * */
     var SeaModel = (function () {
 
-        var SeaModel = function () {
+        var _private = {};
+        var object_id = 0;
 
+        var SeaModel = function (data) {
+            data = data || {};
+
+            var self = this;
+
+            Object.defineProperty(self, '$id', { value: ++object_id, writable: false, enumerable: false, configurable: false });
+            Object.defineProperty(self, '$promise', { value: undefined, writable: true, enumerable: false, configurable: false });
+            Object.defineProperty(self, '$calling', { value: false, writable: true, enumerable: false, configurable: false });
+
+            _private[self.$id] = Object.assign({}, self.$config.attributes);
+
+            if (typeof data !== 'object') {
+                _private[self.$id][self.$config.identifier] = data;
+            } else {
+                Object.assign(_private[self.$id], data);
+            }
+
+            if (_private[self.$id][self.$config.identifier] === undefined) {
+                _private[self.$id][self.$config.identifier] = 0;
+            }
+
+            for (var attr in _private[self.$id]) {
+                addProperty(self, attr);
+            }
+        };
+
+        SeaModel.prototype.getId = function () {
+            return _private[this.$id][this.$config.identifier];
+        };
+
+        SeaModel.prototype.setId = function (value) {
+            _private[this.$id][this.$config.identifier] = value;
+        };
+
+        SeaModel.prototype.get = function (attr) {
+            return _private[this.$id][attr];
+        };
+
+        SeaModel.prototype.set = function (attr, value) {
+            if (attr && attr in _private[this.$id]) {
+                _private[this.$id][attr] = value;
+            }
         };
 
         return SeaModel;
@@ -100,6 +143,7 @@ if (typeof Object.assign != 'function') {
             endpoint: function (name) {
                 return '/' + uncapitalize.apply(name) + '/:id';
             },
+            identifier: 'id',
             actions: {
                 'get': { method: 'GET' },
                 'create': { method: 'POST' },
@@ -166,11 +210,18 @@ if (typeof Object.assign != 'function') {
             }
 
             var NewModel = function () {
-
+                var args = Array.prototype.slice.call(arguments);
+                SeaModel.apply(this, args);
             };
 
+            // inheriting static methods
+            Object.assign(NewModel, SeaModel);
+
+            // inheriting prototype methods
             NewModel.prototype = Object.create(SeaModel.prototype);
             NewModel.prototype.constructor = NewModel;
+
+            // adding $config attribute
             NewModel.prototype.$config = NewModel.$config = fullConfig(config);
 
             Models[config.name] = NewModel;

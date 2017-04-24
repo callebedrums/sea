@@ -27,9 +27,10 @@ describe('Sea Test Suite', function () {
                 expect(SeaModelManager.config().attr).to.equal('value');
             });
 
-            it('should set endpointPrefix and endpoint method into default config', function () {
+            it('should set identifier, endpointPrefix and endpoint method into default config', function () {
                 var config = SeaModelManager.config();
 
+                expect(config.identifier).to.equal("id");
                 expect(config.endpointPrefix).to.equal("");
                 expect(config.endpoint).to.be.instanceof(Function);
                 expect(config.endpoint("MyModule")).to.equal("/myModule/:id");
@@ -82,6 +83,110 @@ describe('Sea Test Suite', function () {
 
                 expect(obj.$config).to.not.be.undefined;
                 expect(MyModel.$config.name).to.equal('MyModel');
+            });
+
+            describe('newModel instance', function () {
+                var MyModel;
+                var obj;
+
+                beforeEach(function () {
+                    MyModel = SeaModelManager.newModel({
+                        name: "MyModel",
+                        attributes: {
+                            'name': "",
+                            'num': 0
+                        }
+                    });
+
+                    obj = new MyModel();
+                });
+                
+                it('should implement getId and setId methods', function () {
+                    var MyModel = SeaModelManager.newModel({
+                        name: "MyModel2",
+                        attributes: {
+                            'name': "",
+                            'attr': null
+                        }
+                    });
+
+                    var obj = new MyModel();
+
+                    expect(obj.getId()).to.equal(0);
+                    obj.setId(1);
+                    expect(obj.getId()).to.equal(1);
+                });
+
+                it('should consider identifier attribute', function () {
+                   var MyModel = SeaModelManager.newModel({
+                        name: "MyModel3",
+                        attributes: {
+                            '_id': "",
+                            'name': "",
+                            'attr': null
+                        },
+                        identifier: "_id"
+                    });
+
+                    var obj = new MyModel();
+
+                    expect(obj.getId()).to.equal("");
+                    obj.setId("abc");
+                    expect(obj.getId()).to.equal("abc"); 
+                });
+
+                it('should get and set attributes', function () {
+                    expect(obj.get('name')).to.equal("");
+                    obj.set('name', 'Callebe');
+                    expect(obj.get('name')).to.equal('Callebe');
+
+                    expect(obj.get('num')).to.equal(0);
+                    obj.set('num', 10);
+                    expect(obj.get('num')).to.equal(10);
+
+                    expect(obj.get('unknow')).to.be.undefined;
+                    obj.set('unknow', 123);
+                    expect(obj.get('unknow')).to.be.undefined;
+                });
+
+                it('should expose each attribute as object attribute', function () {
+                    expect(obj.get('name')).to.equal("");
+                    expect(obj.name).to.equal("");
+                    obj.name = "Callebe";
+                    expect(obj.get('name')).to.equal("Callebe");
+                    expect(obj.name).to.equal("Callebe");
+
+                    expect(obj.get('num')).to.equal(0);
+                    expect(obj.num).to.equal(0);
+                    obj.num = 123;
+                    expect(obj.get('num')).to.equal(123);
+                    expect(obj.num).to.equal(123);
+
+                    expect(obj.get('unknow')).to.be.undefined;
+                    expect(obj.unknow).to.be.undefined;
+                    obj.unknow = 123;
+                    expect(obj.get('unknow')).to.be.undefined;
+                    expect(obj.unknow).to.equal(123);
+                });
+
+                it('should populate attributes in constructor', function () {
+                    obj = new MyModel({
+                        id: 10,
+                        name: "Callebe",
+                        num: 345,
+                        other: "Other attr add to this instance"
+                    });
+
+                    expect(obj.getId()).to.equal(10);
+                    expect(obj.get('id')).to.equal(10);
+                    expect(obj.get('name')).to.equal("Callebe");
+                    expect(obj.get('num')).to.equal(345);
+                    expect(obj.get('other')).to.equal("Other attr add to this instance");
+
+                    obj = new MyModel(20);
+
+                    expect(obj.getId()).to.equal(20);
+                });
             });
         });
 
