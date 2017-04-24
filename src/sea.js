@@ -77,7 +77,7 @@ if (typeof Object.assign != 'function') {
             Object.defineProperty(self, '$promise', { value: undefined, writable: true, enumerable: false, configurable: false });
             Object.defineProperty(self, '$calling', { value: false, writable: true, enumerable: false, configurable: false });
 
-            _private[self.$id] = Object.assign({}, self.$config.attributes);
+            _private[self.$id] = Object.assign({}, self.$config.properties);
 
             if (typeof data !== 'object') {
                 _private[self.$id][self.$config.identifier] = data;
@@ -89,8 +89,8 @@ if (typeof Object.assign != 'function') {
                 _private[self.$id][self.$config.identifier] = 0;
             }
 
-            for (var attr in _private[self.$id]) {
-                addProperty(self, attr);
+            for (var prop in _private[self.$id]) {
+                addProperty(self, prop);
             }
         };
 
@@ -102,13 +102,13 @@ if (typeof Object.assign != 'function') {
             _private[this.$id][this.$config.identifier] = value;
         };
 
-        SeaModel.prototype.get = function (attr) {
-            return _private[this.$id][attr];
+        SeaModel.prototype.get = function (prop) {
+            return _private[this.$id][prop];
         };
 
-        SeaModel.prototype.set = function (attr, value) {
-            if (attr && attr in _private[this.$id]) {
-                _private[this.$id][attr] = value;
+        SeaModel.prototype.set = function (prop, value) {
+            if (prop && prop in _private[this.$id]) {
+                _private[this.$id][prop] = value;
             }
         };
 

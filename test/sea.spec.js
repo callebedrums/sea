@@ -92,7 +92,7 @@ describe('Sea Test Suite', function () {
                 beforeEach(function () {
                     MyModel = SeaModelManager.newModel({
                         name: "MyModel",
-                        attributes: {
+                        properties: {
                             'name': "",
                             'num': 0
                         }
@@ -104,7 +104,7 @@ describe('Sea Test Suite', function () {
                 it('should implement getId and setId methods', function () {
                     var MyModel = SeaModelManager.newModel({
                         name: "MyModel2",
-                        attributes: {
+                        properties: {
                             'name': "",
                             'attr': null
                         }
@@ -117,10 +117,10 @@ describe('Sea Test Suite', function () {
                     expect(obj.getId()).to.equal(1);
                 });
 
-                it('should consider identifier attribute', function () {
+                it('should consider identifier property', function () {
                    var MyModel = SeaModelManager.newModel({
                         name: "MyModel3",
-                        attributes: {
+                        properties: {
                             '_id': "",
                             'name': "",
                             'attr': null
@@ -135,7 +135,7 @@ describe('Sea Test Suite', function () {
                     expect(obj.getId()).to.equal("abc"); 
                 });
 
-                it('should get and set attributes', function () {
+                it('should get and set properties', function () {
                     expect(obj.get('name')).to.equal("");
                     obj.set('name', 'Callebe');
                     expect(obj.get('name')).to.equal('Callebe');
@@ -169,7 +169,7 @@ describe('Sea Test Suite', function () {
                     expect(obj.unknow).to.equal(123);
                 });
 
-                it('should populate attributes in constructor', function () {
+                it('should populate properties in constructor', function () {
                     obj = new MyModel({
                         id: 10,
                         name: "Callebe",
