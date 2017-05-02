@@ -60,6 +60,22 @@ if (typeof Object.assign != 'function') {
         });
     };
 
+    var SeaResource = (function () {
+        var SeaResource = function (config) {
+            this.$config = config;
+
+            for (var action in config.actions) {
+                 /* istanbul ignore else  */
+                if (config.actions.hasOwnProperty(action)) {
+                    this[action] = function () {};
+                }
+            }
+
+        };
+
+        return SeaResource;
+    }) ();
+
     /**
      * Sea Model Class
      * */
@@ -112,6 +128,10 @@ if (typeof Object.assign != 'function') {
             }
         };
 
+        SeaModel.prototype.load = function () {
+
+        };
+
         return SeaModel;
     }) ();
 
@@ -141,14 +161,14 @@ if (typeof Object.assign != 'function') {
         var defaultConfig = {
             endpointPrefix: '',
             endpoint: function (name) {
-                return '/' + uncapitalize.apply(name) + '/:id';
+                return '/' + uncapitalize.apply(name) + '/<id>';
             },
             identifier: 'id',
             actions: {
                 'get': { method: 'GET' },
                 'create': { method: 'POST' },
                 'update': { method: 'PUT' },
-                'query': { method: 'GET', isArray: true },
+                'query': { method: 'GET' },
                 'remove': { method: 'DELETE' },
                 'delete': { method: 'DELETE' }
                 /** extra actions */
@@ -224,6 +244,9 @@ if (typeof Object.assign != 'function') {
             // adding $config attribute
             NewModel.prototype.$config = NewModel.$config = fullConfig(config);
 
+            // adding $resource attribute
+            NewModel.prototype.$resource = NewModel.$resource = new SeaResource(NewModel.$config);
+
             Models[config.name] = NewModel;
             Models.length++;
 
@@ -237,6 +260,7 @@ if (typeof Object.assign != 'function') {
 
     return {
         ModelManager: SeaModelManager,
-        Model: SeaModel
+        Model: SeaModel,
+        Resource: SeaResource
     };
 }));

@@ -4,14 +4,49 @@ describe('Sea Test Suite', function () {
 
     beforeEach(module('sea'));
 
+    describe('SeaResource', function () {
+
+        var SeaModelManager;
+        var SeaModel;
+        var SeaResource;
+
+        beforeEach(inject(function ($injector) {
+            SeaModelManager = $injector.get('SeaModelManager');
+            SeaResource = Sea.Resource;
+        }));
+
+        it('should define a method for each action', function () {
+            var resource = new SeaResource({
+                actions: {
+                    'get': { method: 'GET' },
+                    'create': { method: 'POST' },
+                    'update': { method: 'PUT' },
+                    'query': { method: 'GET' },
+                    'remove': { method: 'DELETE' },
+                    'delete': { method: 'DELETE' }
+                }
+            });
+
+            expect(resource.get).to.be.instanceof(Function);
+            expect(resource.create).to.be.instanceof(Function);
+            expect(resource.update).to.be.instanceof(Function);
+            expect(resource.query).to.be.instanceof(Function);
+            expect(resource.remove).to.be.instanceof(Function);
+            expect(resource.delete).to.be.instanceof(Function);
+        });
+
+    });
+
     describe('SeaModelManager', function () {
 
         var SeaModelManager;
         var SeaModel;
+        var SeaResource;
 
         beforeEach(inject(function ($injector) {
             SeaModelManager = $injector.get('SeaModelManager');
             SeaModel = Sea.Model;
+            SeaResource = Sea.Resource;
         }));
 
         describe('config method', function () {
@@ -33,7 +68,7 @@ describe('Sea Test Suite', function () {
                 expect(config.identifier).to.equal("id");
                 expect(config.endpointPrefix).to.equal("");
                 expect(config.endpoint).to.be.instanceof(Function);
-                expect(config.endpoint("MyModule")).to.equal("/myModule/:id");
+                expect(config.endpoint("MyModule")).to.equal("/myModule/<id>");
             });
         });
 
@@ -83,6 +118,19 @@ describe('Sea Test Suite', function () {
 
                 expect(obj.$config).to.not.be.undefined;
                 expect(MyModel.$config.name).to.equal('MyModel');
+            });
+
+            it('should have a $resource attribute', function () {
+                var MyModel = SeaModelManager.newModel({
+                    name: 'MyModel'
+                });
+
+                expect(MyModel.$resource).to.not.be.undefined;
+                expect(MyModel.$resource).to.be.instanceof(SeaResource);
+
+                var obj = new MyModel();
+                expect(obj.$resource).to.not.be.undefined;
+                expect(obj.$resource).to.be.instanceof(SeaResource);
             });
 
             describe('newModel instance', function () {
@@ -186,6 +234,16 @@ describe('Sea Test Suite', function () {
                     obj = new MyModel(20);
 
                     expect(obj.getId()).to.equal(20);
+                });
+
+                describe('load method', function () {
+                    it('should implement a load method', function () {
+                        expect(obj.load).to.be.instanceof(Function);
+                    });
+
+                    it('should call get method from SeaResource', function () {
+
+                    });
                 });
             });
         });
