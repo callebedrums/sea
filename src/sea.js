@@ -31,7 +31,7 @@ if (typeof Object.assign != 'function') {
 
 (function (root, factory) {
     'use strict';
-    /* istanbul ignore if  */
+    /* istanbul ignore next  */
     if (typeof module === 'object' && module.exports) {
         module.exports = factory();
     /* istanbul ignore if  */
@@ -61,16 +61,81 @@ if (typeof Object.assign != 'function') {
     };
 
     var SeaResource = (function () {
-        var SeaResource = function (config) {
+
+        var actionMethod = function (self, config) {
+            return function (data, params) {
+                if (config.isArray) {
+                    params = data;
+                    data = null;
+                }
+
+                return self.request(config.method, data, params, config.sufix);
+            };
+        };
+
+        var SeaResource = function (http, q, config) {
             this.$config = config;
+            this.$http = http;
+            this.$q = q;
+            this.$cache = {};
 
             for (var action in config.actions) {
                  /* istanbul ignore else  */
                 if (config.actions.hasOwnProperty(action)) {
-                    this[action] = function () {};
+                    this[action] = actionMethod(this, config.actions[action]);
                 }
             }
 
+        };
+
+        SeaResource.prototype.getURL = function (data, sufix) {
+            data = data || {};
+            sufix = sufix || '';
+
+            var config = this.$config;
+            var prefix = config.endpointPrefix || '';
+            var endpoint = config.endpoint || '';
+
+            if (typeof config.endpoint === 'function') {
+                endpoint = config.endpoint(config.name);
+            } else if(typeof config.endpoint === 'string') {
+                endpoint = config.endpoint;
+            }
+
+            for (var param in data) {
+                /* istanbul ignore else  */
+                if (data.hasOwnProperty(param) && endpoint.indexOf('<' + param + '>') >= 0) {
+                    endpoint = endpoint.replace('<' + param + '>', data[param]);
+                }
+            }
+
+            endpoint = endpoint.replace(/\/<[\w-]+>/g, '');
+
+            return prefix + endpoint + sufix;
+        };
+
+        SeaResource.prototype.request = function (method, data, params, sufix) {
+            var self = this;
+            if (self.$cache[arguments]) {
+                return self.$cache[arguments];
+            }
+
+            var url = self.getURL(data, sufix);
+
+            method = method.toUpperCase().trim();
+
+            self.$cache[arguments] = self.$http({
+                method: method,
+                url: url,
+                params: params,
+                data: data
+            })
+
+            self.$cache[arguments].finally(function () {
+                delete self.$cache[arguments];
+            });
+
+            return self.$cache[arguments];
         };
 
         return SeaResource;
@@ -168,7 +233,7 @@ if (typeof Object.assign != 'function') {
                 'get': { method: 'GET' },
                 'create': { method: 'POST' },
                 'update': { method: 'PUT' },
-                'query': { method: 'GET' },
+                'query': { method: 'GET', isArray: true },
                 'remove': { method: 'DELETE' },
                 'delete': { method: 'DELETE' }
                 /** extra actions */
@@ -245,7 +310,7 @@ if (typeof Object.assign != 'function') {
             NewModel.prototype.$config = NewModel.$config = fullConfig(config);
 
             // adding $resource attribute
-            NewModel.prototype.$resource = NewModel.$resource = new SeaResource(NewModel.$config);
+            NewModel.prototype.$resource = NewModel.$resource = new SeaResource($http, $q, NewModel.$config);
 
             Models[config.name] = NewModel;
             Models.length++;

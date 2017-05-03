@@ -1,7 +1,7 @@
 
 (function (root, factory) {
     'use strict';
-    /* istanbul ignore if  */
+    /* istanbul ignore next  */
     if (typeof module === 'object' && module.exports) {
         module.exports = factory(require('./sea'), require('angular'));
     /* istanbul ignore if  */
