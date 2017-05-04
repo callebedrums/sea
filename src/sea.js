@@ -226,6 +226,10 @@ if (typeof Object.assign != 'function') {
                 deferred.resolve(self, response);
                 $rootScope.$broadcast('SeaModel.' + self.$config.name + '.load-success', self);
             })
+            .catch(function (response) {
+                deferred.reject(self, response);
+                $rootScope.$broadcast('SeaModel.' + self.$config.name + '.load-error', self);
+            })
             .finally(function () {
                 self.$calling = false;
             });
@@ -235,6 +239,14 @@ if (typeof Object.assign != 'function') {
 
             return self.$promise = deferred.promise;
         };
+
+        SeaModel.prototype.save = function () {};
+
+        SeaModel.prototype.remove = function () {};
+
+        SeaModel.query = function () {};
+        
+        SeaModel.get = function () {};
 
         return SeaModel;
     }) ();

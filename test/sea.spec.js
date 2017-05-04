@@ -466,6 +466,67 @@ describe('Sea Test Suite', function () {
                         expect(obj.name).to.equal("Callebe");
                         expect(obj.num).to.equal(10);
                     });
+
+                    it('should reject promise when loading fails', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('get').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.load().catch(spy);
+
+                        deferred.reject({});
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.load-error', obj).calledOnce).to.be.true;
+                    });
+                });
+
+                describe('save method', function () {
+                    it('should implement a save method', function () {
+                        expect(obj.save).to.be.instanceof(Function);
+                    });
+                });
+
+                describe('remove method', function () {
+                    it('should implement a remove method', function () {
+                        expect(obj.remove).to.be.instanceof(Function);
+                    });
+                });
+            });
+
+            describe('query method', function () {
+
+                var MyModel;
+
+                beforeEach(function () {
+                    MyModel = SeaModelManager.newModel({
+                        name: 'MyModel'
+                    });
+                });
+
+                it('should implement a query method', function () {
+                    expect(MyModel.query).to.be.instanceof(Function);
+                });
+            });
+
+            describe('get method', function () {
+
+                var MyModel;
+
+                beforeEach(function () {
+                    MyModel = SeaModelManager.newModel({
+                        name: 'MyModel'
+                    });
+                });
+
+                it('should implement a get method', function () {
+                    expect(MyModel.get).to.be.instanceof(Function);
                 });
             });
         });
