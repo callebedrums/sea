@@ -60,6 +60,15 @@ if (typeof Object.assign != 'function') {
         });
     };
 
+    /** $http - the XMLHttpRequest service like angular service */
+    var $http;
+
+    /** $q - the promise service like angular service */
+    var $q;
+
+    /** $rootScope - the event api that implements $broadcast method */
+    var $rootScope;
+
     var SeaResource = (function () {
 
         var actionMethod = function (self, config) {
@@ -73,10 +82,8 @@ if (typeof Object.assign != 'function') {
             };
         };
 
-        var SeaResource = function (http, q, config) {
+        var SeaResource = function (config) {
             this.$config = config;
-            this.$http = http;
-            this.$q = q;
             this.$cache = {};
 
             for (var action in config.actions) {
@@ -124,7 +131,7 @@ if (typeof Object.assign != 'function') {
 
             method = method.toUpperCase().trim();
 
-            self.$cache[arguments] = self.$http({
+            self.$cache[arguments] = $http({
                 method: method,
                 url: url,
                 params: params,
@@ -175,6 +182,8 @@ if (typeof Object.assign != 'function') {
             }
         };
 
+        Object.defineProperty(SeaModel.prototype, '$isNew', { get: function () { return !this.getId(); }, enumerable: false, configurable: false });
+
         SeaModel.prototype.getId = function () {
             return _private[this.$id][this.$config.identifier];
         };
@@ -190,11 +199,41 @@ if (typeof Object.assign != 'function') {
         SeaModel.prototype.set = function (prop, value) {
             if (prop && prop in _private[this.$id]) {
                 _private[this.$id][prop] = value;
+            } else if (typeof prop === 'object') {
+                this.setObj(prop)
+            }
+        };
+
+        SeaModel.prototype.setObj = function (obj) {
+            if (typeof obj === 'object') {
+                for (var prop in obj) {
+                    /* istanbul ignore else  */
+                    if (obj.hasOwnProperty(prop)) {
+                        this.set(prop, obj[prop]);
+                    }
+                }
             }
         };
 
         SeaModel.prototype.load = function () {
+            var self = this;
 
+            var deferred = $q.defer();
+
+            self.$resource.get(_private[this.$id])
+            .then(function (response) {
+                self.set(response.data);
+                deferred.resolve(self, response);
+                $rootScope.$broadcast('SeaModel.' + self.$config.name + '.load-success', self);
+            })
+            .finally(function () {
+                self.$calling = false;
+            });
+
+            self.$calling = true;
+            $rootScope.$broadcast('SeaModel.' + self.$config.name + '.load-started', self);
+
+            return self.$promise = deferred.promise;
         };
 
         return SeaModel;
@@ -212,12 +251,6 @@ if (typeof Object.assign != 'function') {
         var Models = {
             length: 0
         };
-
-        /** $http - the XMLHttpRequest service like angular service */
-        var $http;
-
-        /** $q - the promise service like angular service */
-        var $q;
 
         /** holds the user default config */
         var config = {};
@@ -310,7 +343,7 @@ if (typeof Object.assign != 'function') {
             NewModel.prototype.$config = NewModel.$config = fullConfig(config);
 
             // adding $resource attribute
-            NewModel.prototype.$resource = NewModel.$resource = new SeaResource($http, $q, NewModel.$config);
+            NewModel.prototype.$resource = NewModel.$resource = new SeaResource(NewModel.$config);
 
             Models[config.name] = NewModel;
             Models.length++;
@@ -318,7 +351,10 @@ if (typeof Object.assign != 'function') {
             return NewModel;
         };
 
-        this.$get = ['$http', '$q', function (_$http, _$q) {
+        this.$get = ['$rootScope', '$http', '$q', function (_$rootScope, _$http, _$q) {
+            $rootScope  = _$rootScope;
+            $http       = _$http;
+            $q          = _$q;
             return self;
         }];
     };

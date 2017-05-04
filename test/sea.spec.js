@@ -6,6 +6,7 @@ describe('Sea Test Suite', function () {
 
     describe('SeaResource', function () {
 
+        var $rootScope;
         var $httpBackend;
         var $http;
         var $q;
@@ -22,15 +23,16 @@ describe('Sea Test Suite', function () {
         };
 
         beforeEach(inject(function ($injector) {
-            $httpBackend = $injector.get('$httpBackend');
-            $http = $injector.get('$http');
-            $q = $injector.get('$q');
+            $rootScope      = $injector.get('$rootScope');
+            $httpBackend    = $injector.get('$httpBackend');
+            $http           = $injector.get('$http');
+            $q              = $injector.get('$q');
             SeaModelManager = $injector.get('SeaModelManager');
-            SeaResource = Sea.Resource;
+            SeaResource     = Sea.Resource;
         }));
 
         beforeEach(function () {
-            resource = new SeaResource($http, $q, {
+            resource = new SeaResource({
                 name: "myModel",
                 endpointPrefix: 'api',
                 endpoint: function (name) {
@@ -184,11 +186,15 @@ describe('Sea Test Suite', function () {
         var SeaModelManager;
         var SeaModel;
         var SeaResource;
+        var $rootScope;
+        var $q;
 
         beforeEach(inject(function ($injector) {
             SeaModelManager = $injector.get('SeaModelManager');
             SeaModel = Sea.Model;
             SeaResource = Sea.Resource;
+            $rootScope = $injector.get('$rootScope');
+            $q = $injector.get('$q');
         }));
 
         describe('config method', function () {
@@ -325,6 +331,14 @@ describe('Sea Test Suite', function () {
                     expect(obj.getId()).to.equal("abc"); 
                 });
 
+                it('should define $isNew attribute', function () {
+                    var obj = new MyModel();
+                    expect(obj.$isNew).to.be.true;
+
+                    obj.id = 1;
+                    expect(obj.$isNew).to.be.false;
+                });
+
                 it('should get and set properties', function () {
                     expect(obj.get('name')).to.equal("");
                     obj.set('name', 'Callebe');
@@ -379,12 +393,78 @@ describe('Sea Test Suite', function () {
                 });
 
                 describe('load method', function () {
+                    var resourceMock;
+
+                    beforeEach(function () {
+                        resourceMock = sinon.mock(obj.$resource);
+                    });
+
+                    afterEach(function () {
+                        resourceMock.restore();
+                    });
+
+
                     it('should implement a load method', function () {
                         expect(obj.load).to.be.instanceof(Function);
                     });
 
                     it('should call get method from SeaResource', function () {
+                        var deferred = $q.defer();
+                        resourceMock.expects('get').withArgs(sinon.match({ id: 1 })).returns(deferred.promise);
 
+                        obj.id = 1;
+                        obj.load();
+
+                        resourceMock.verify();
+                    });
+
+                    it('should return a promise and set $calling to true', function () {
+                        var deferred = $q.defer();
+                        var spy = sinon.spy($rootScope, '$broadcast');
+                        resourceMock.expects('get').returns(deferred.promise);
+
+                        obj.id = 1;
+                        var promise = obj.load();
+
+                        expect(promise).to.not.be.undefined;
+                        expect(promise.then).to.be.instanceof(Function);
+                        expect(promise.catch).to.be.instanceof(Function);
+                        expect(promise.finally).to.be.instanceof(Function);
+
+                        expect(obj.$promise).to.equal(promise);
+                        expect(obj.$calling).to.be.true;
+
+                        expect(spy.withArgs('SeaModel.MyModel.load-started', obj).calledOnce).to.be.true;
+                    });
+
+                    it('should resolve promise when get loaded', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('get').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.load().then(spy);
+
+                        var response = {
+                            data: {
+                                id: 1,
+                                name: "Callebe",
+                                num: 10
+                            }
+                        };
+
+                        deferred.resolve(response);
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.load-success', obj).calledOnce).to.be.true;
+
+                        expect(obj.name).to.equal("Callebe");
+                        expect(obj.num).to.equal(10);
                     });
                 });
             });
