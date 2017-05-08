@@ -284,6 +284,7 @@ describe('Sea Test Suite', function () {
             describe('newModel instance', function () {
                 var MyModel;
                 var obj;
+                var resourceMock;
 
                 beforeEach(function () {
                     MyModel = SeaModelManager.newModel({
@@ -295,6 +296,12 @@ describe('Sea Test Suite', function () {
                     });
 
                     obj = new MyModel();
+
+                    resourceMock = sinon.mock(obj.$resource);
+                });
+
+                afterEach(function () {
+                    resourceMock.restore();
                 });
                 
                 it('should implement getId and setId methods', function () {
@@ -392,18 +399,20 @@ describe('Sea Test Suite', function () {
                     expect(obj.getId()).to.equal(20);
                 });
 
+                it('should return a JavaScript Object (toJS)', function () {
+                    obj = new MyModel({
+                        id: 1,
+                        name: "Callebe"
+                    });
+
+                    expect(obj.toJS()).to.eql({
+                        id: 1,
+                        name: "Callebe",
+                        num: 0
+                    });
+                });
+
                 describe('load method', function () {
-                    var resourceMock;
-
-                    beforeEach(function () {
-                        resourceMock = sinon.mock(obj.$resource);
-                    });
-
-                    afterEach(function () {
-                        resourceMock.restore();
-                    });
-
-
                     it('should implement a load method', function () {
                         expect(obj.load).to.be.instanceof(Function);
                     });
@@ -418,7 +427,7 @@ describe('Sea Test Suite', function () {
                         resourceMock.verify();
                     });
 
-                    it('should return a promise and set $calling to true', function () {
+                    it('should return a promise and set $calling to true when load method is called', function () {
                         var deferred = $q.defer();
                         var spy = sinon.spy($rootScope, '$broadcast');
                         resourceMock.expects('get').returns(deferred.promise);
@@ -491,11 +500,198 @@ describe('Sea Test Suite', function () {
                     it('should implement a save method', function () {
                         expect(obj.save).to.be.instanceof(Function);
                     });
+
+                    it('should call create method from SeaResource when there is no identifier', function () {
+                        var deferred = $q.defer();
+                        resourceMock.expects('create').withArgs(sinon.match({
+                            name: "Callebe",
+                            num: 29
+                        })).returns(deferred.promise);
+
+                        obj.id = 0;
+                        obj.name = "Callebe";
+                        obj.num = 29
+
+                        obj.save();
+
+                        resourceMock.verify();
+                    });
+
+                    it('should call update method from SeaResource when there is identifier', function () {
+                        var deferred = $q.defer();
+                        resourceMock.expects('update').withArgs(sinon.match({
+                            id: 1,
+                            name: "Callebe",
+                            num: 29
+                        })).returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.name = "Callebe";
+                        obj.num = 29
+
+                        obj.save();
+
+                        resourceMock.verify();
+                    });
+
+                    it('should return a promise and set $calling to true when save method is called', function () {
+                        var deferred = $q.defer();
+                        var spy = sinon.spy($rootScope, '$broadcast');
+                        resourceMock.expects('update').returns(deferred.promise);
+
+                        obj.id = 1;
+                        var promise = obj.save();
+
+                        expect(promise).to.not.be.undefined;
+                        expect(promise.then).to.be.instanceof(Function);
+                        expect(promise.catch).to.be.instanceof(Function);
+                        expect(promise.finally).to.be.instanceof(Function);
+
+                        expect(obj.$promise).to.equal(promise);
+                        expect(obj.$calling).to.be.true;
+
+                        expect(spy.withArgs('SeaModel.MyModel.save-started', obj).calledOnce).to.be.true;
+                    });
+
+                    it('should resolve promise when save data', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('update').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.name = "Callebe";
+                        obj.num = 10
+                        obj.save().then(spy);
+
+                        var response = {
+                            data: {
+                                id: 1,
+                                name: "Callebe",
+                                num: 11
+                            }
+                        };
+
+                        deferred.resolve(response);
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.save-success', obj).calledOnce).to.be.true;
+
+                        expect(obj.name).to.equal("Callebe");
+                        expect(obj.num).to.equal(11);
+                    });
+
+                    it('should reject promise when saving fails', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('update').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.name = "Callebe";
+                        obj.num = 10
+                        obj.save().catch(spy);
+
+                        deferred.reject({});
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.save-error', obj).calledOnce).to.be.true;
+                    });
                 });
 
                 describe('remove method', function () {
                     it('should implement a remove method', function () {
                         expect(obj.remove).to.be.instanceof(Function);
+                    });
+
+                    it('should call remove method from SeaResource when there is identifier', function () {
+                        var deferred = $q.defer();
+                        resourceMock.expects('remove').withArgs(sinon.match({
+                            id: 1
+                        })).returns(deferred.promise);
+
+                        obj.id = 1;
+
+                        obj.remove();
+
+                        resourceMock.verify();
+                    });
+
+                    it('should return a promise and set $calling to true when remuve method is called', function () {
+                        var deferred = $q.defer();
+                        var spy = sinon.spy($rootScope, '$broadcast');
+                        resourceMock.expects('remove').returns(deferred.promise);
+
+                        obj.id = 1;
+                        var promise = obj.remove();
+
+                        expect(promise).to.not.be.undefined;
+                        expect(promise.then).to.be.instanceof(Function);
+                        expect(promise.catch).to.be.instanceof(Function);
+                        expect(promise.finally).to.be.instanceof(Function);
+
+                        expect(obj.$promise).to.equal(promise);
+                        expect(obj.$calling).to.be.true;
+
+                        expect(spy.withArgs('SeaModel.MyModel.remove-started', obj).calledOnce).to.be.true;
+                    });
+
+                    it('should resolve promise when remove is completed', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('remove').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.remove().then(spy);
+
+                        var response = {};
+
+                        deferred.resolve(response);
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.remove-success', obj).calledOnce).to.be.true;
+                    });
+
+                    it('should reject promise when removing fails', function () {
+                        var deferred = $q.defer();
+                        var eventSpy = sinon.spy($rootScope, '$broadcast');
+                        var spy = sinon.spy();
+                        resourceMock.expects('remove').returns(deferred.promise);
+
+                        obj.id = 1;
+                        obj.remove().catch(spy);
+
+                        deferred.reject({});
+
+                        $rootScope.$apply();
+                        $rootScope.$apply();
+
+                        expect(spy.withArgs(obj).calledOnce).to.be.true;
+                        expect(obj.$calling).to.be.false;
+                        expect(eventSpy.withArgs('SeaModel.MyModel.remove-error', obj).calledOnce).to.be.true;
+                    });
+
+                    it('should not call remove method from SeaResource when there is no identifier', function () {
+                        var deferred = $q.defer();
+                        var spy = sinon.spy(obj.$resource, 'remove');
+
+                        obj.id = 0;
+                        
+                        expect(obj.remove()).to.be.undefined;
+                        expect(spy.notCalled).to.be.true;
                     });
                 });
             });

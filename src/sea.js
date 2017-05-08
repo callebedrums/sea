@@ -111,7 +111,7 @@ if (typeof Object.assign != 'function') {
 
             for (var param in data) {
                 /* istanbul ignore else  */
-                if (data.hasOwnProperty(param) && endpoint.indexOf('<' + param + '>') >= 0) {
+                if (data.hasOwnProperty(param)) {
                     endpoint = endpoint.replace('<' + param + '>', data[param]);
                 }
             }
@@ -184,6 +184,20 @@ if (typeof Object.assign != 'function') {
 
         Object.defineProperty(SeaModel.prototype, '$isNew', { get: function () { return !this.getId(); }, enumerable: false, configurable: false });
 
+        SeaModel.prototype.toJS = function () {
+            var self = this;
+            var obj = {};
+
+            for (var attr in _private[self.$id]) {
+                /* istanbul ignore else  */
+                if (_private[self.$id].hasOwnProperty(attr)) {
+                    obj[attr] = _private[self.$id][attr];
+                }
+            }
+
+            return obj;
+        };
+
         SeaModel.prototype.getId = function () {
             return _private[this.$id][this.$config.identifier];
         };
@@ -220,7 +234,7 @@ if (typeof Object.assign != 'function') {
 
             var deferred = $q.defer();
 
-            self.$resource.get(_private[this.$id])
+            self.$resource.get(self.toJS())
             .then(function (response) {
                 self.set(response.data);
                 deferred.resolve(self, response);
@@ -240,9 +254,64 @@ if (typeof Object.assign != 'function') {
             return self.$promise = deferred.promise;
         };
 
-        SeaModel.prototype.save = function () {};
+        SeaModel.prototype.save = function () {
+            var self = this;
+            var method = 'update';
+            var obj = self.toJS();
 
-        SeaModel.prototype.remove = function () {};
+            var deferred = $q.defer();
+
+            if (self.$isNew) {
+                delete obj[self.$config.identifier];
+                method = 'create';
+            }
+
+            self.$resource[method](obj)
+            .then(function (response) {
+                self.set(response.data);
+                deferred.resolve(self, response);
+                $rootScope.$broadcast('SeaModel.' + self.$config.name + '.save-success', self);
+            })
+            .catch(function (response) {
+                deferred.reject(self, response);
+                $rootScope.$broadcast('SeaModel.' + self.$config.name + '.save-error', self);
+            })
+            .finally(function () {
+                self.$calling = false;
+            });
+
+            self.$calling = true;
+            $rootScope.$broadcast('SeaModel.' + self.$config.name + '.save-started', self);
+
+            return self.$promise = deferred.promise;
+        };
+
+        SeaModel.prototype.remove = function () {
+            var self = this;
+            var obj = self.toJS();
+
+            if(!self.$isNew) {
+                var deferred = $q.defer();
+
+                self.$resource.remove(obj)
+                .then(function (response) {
+                    deferred.resolve(self, response);
+                    $rootScope.$broadcast('SeaModel.' + self.$config.name + '.remove-success', self);
+                })
+                .catch(function (response) {
+                    deferred.reject(self, response);
+                    $rootScope.$broadcast('SeaModel.' + self.$config.name + '.remove-error', self);
+                })
+                .finally(function () {
+                    self.$calling = false;
+                });
+
+                self.$calling = true;
+                $rootScope.$broadcast('SeaModel.' + self.$config.name + '.remove-started', self);
+
+                return self.$promise = deferred.promise;
+            }
+        };
 
         SeaModel.query = function () {};
         
