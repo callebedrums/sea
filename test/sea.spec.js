@@ -699,15 +699,101 @@ describe('Sea Test Suite', function () {
             describe('query method', function () {
 
                 var MyModel;
+                var resourceMock;
 
                 beforeEach(function () {
                     MyModel = SeaModelManager.newModel({
                         name: 'MyModel'
                     });
+
+                    resourceMock = sinon.mock(MyModel.$resource);
+                });
+
+                afterEach(function () {
+                    resourceMock.restore();
                 });
 
                 it('should implement a query method', function () {
                     expect(MyModel.query).to.be.instanceof(Function);
+                });
+
+                it('should call query method from SeaResource', function () {
+                    var deferred = $q.defer();
+                    resourceMock.expects('query').withArgs(sinon.match({
+                        param: 1
+                    })).returns(deferred.promise);
+
+                    MyModel.query({ param: 1 });
+
+                    resourceMock.verify();
+                });
+
+                it('should return an array having a promise attribute and set $calling to true when query method is called', function () {
+                    var deferred = $q.defer();
+                    var spy = sinon.spy($rootScope, '$broadcast');
+                    resourceMock.expects('query').returns(deferred.promise);
+
+                    var result = MyModel.query();
+
+                    expect(result).to.be.instanceof(Array);
+                    expect(result).to.have.length(0);
+
+                    expect(result.$promise).to.not.be.undefined;
+                    expect(result.$promise.then).to.be.instanceof(Function);
+                    expect(result.$promise.catch).to.be.instanceof(Function);
+                    expect(result.$promise.finally).to.be.instanceof(Function);
+
+                    expect(result.$calling).to.be.true;
+
+                    expect(spy.withArgs('SeaModel.MyModel.query-started', result).calledOnce).to.be.true;
+                });
+
+                it('should resolve promise when query is completed', function () {
+                    var deferred = $q.defer();
+                    var eventSpy = sinon.spy($rootScope, '$broadcast');
+                    var spy = sinon.spy();
+                    resourceMock.expects('query').returns(deferred.promise);
+
+                    var result = MyModel.query();
+                    result.$promise.then(spy);
+
+                    var response = {
+                        data: [{
+                            id: 1,
+                            name: "Callebe",
+                            num: 3
+                        }]
+                    };
+
+                    deferred.resolve(response);
+
+                    $rootScope.$apply();
+                    $rootScope.$apply();
+
+                    expect(result).to.have.length(1);
+                    expect(result[0]).to.be.instanceof(MyModel);
+                    expect(spy.withArgs(result).calledOnce).to.be.true;
+                    expect(result.$calling).to.be.false;
+                    expect(eventSpy.withArgs('SeaModel.MyModel.query-success', result).calledOnce).to.be.true;
+                });
+
+                it('should reject promise when querying fails', function () {
+                    var deferred = $q.defer();
+                    var eventSpy = sinon.spy($rootScope, '$broadcast');
+                    var spy = sinon.spy();
+                    resourceMock.expects('query').returns(deferred.promise);
+
+                    var result = MyModel.query();
+                    result.$promise.catch(spy);
+
+                    deferred.reject({});
+
+                    $rootScope.$apply();
+                    $rootScope.$apply();
+
+                    expect(spy.withArgs(result).calledOnce).to.be.true;
+                    expect(result.$calling).to.be.false;
+                    expect(eventSpy.withArgs('SeaModel.MyModel.query-error', result).calledOnce).to.be.true;
                 });
             });
 

@@ -2,7 +2,7 @@
  * @author: Callebe Gomes
  * */
 
- /* istanbul ignore else  */
+/* istanbul ignore else  */
 if (typeof Object.assign != 'function') {
     /* istanbul ignore next  */
     Object.assign = function(target, varArgs) { // .length of function is 2
@@ -27,6 +27,65 @@ if (typeof Object.assign != 'function') {
         }
         return to;
     };
+}
+
+// Production steps of ECMA-262, Edition 5, 15.4.4.18
+// Reference: http://es5.github.com/#x15.4.4.18
+/* istanbul ignore if  */
+if ( !Array.prototype.forEach ) {
+  Array.prototype.forEach = function forEach( callback, thisArg ) {
+
+    var T, k;
+
+    if ( this == null ) {
+      throw new TypeError( "this is null or not defined" );
+    }
+
+    // 1. Let O be the result of calling ToObject passing the |this| value as the argument.
+    var O = Object(this);
+
+    // 2. Let lenValue be the result of calling the Get internal method of O with the argument "length".
+    // 3. Let len be ToUint32(lenValue).
+    var len = O.length >>> 0; // Hack to convert O.length to a UInt32
+
+    // 4. If IsCallable(callback) is false, throw a TypeError exception.
+    // See: http://es5.github.com/#x9.11
+    if ( {}.toString.call(callback) !== "[object Function]" ) {
+      throw new TypeError( callback + " is not a function" );
+    }
+
+    // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+    if ( thisArg ) {
+      T = thisArg;
+    }
+
+    // 6. Let k be 0
+    k = 0;
+
+    // 7. Repeat, while k < len
+    while( k < len ) {
+
+      var kValue;
+
+      // a. Let Pk be ToString(k).
+      //   This is implicit for LHS operands of the in operator
+      // b. Let kPresent be the result of calling the HasProperty internal method of O with argument Pk.
+      //   This step can be combined with c
+      // c. If kPresent is true, then
+      if ( Object.prototype.hasOwnProperty.call(O, k) ) {
+
+        // i. Let kValue be the result of calling the Get internal method of O with argument Pk.
+        kValue = O[ k ];
+
+        // ii. Call the Call internal method of callback with T as the this value and
+        // argument list containing kValue, k, and O.
+        callback.call( T, kValue, k, O );
+      }
+      // d. Increase k by 1.
+      k++;
+    }
+    // 8. return undefined
+  };
 }
 
 (function (root, factory) {
@@ -313,7 +372,37 @@ if (typeof Object.assign != 'function') {
             }
         };
 
-        SeaModel.query = function () {};
+        SeaModel.query = function (params) {
+            var Model = this;
+            params = params || {};
+
+            var deferred = $q.defer();
+            var result = [];
+
+            Model.$resource.query(params)
+            .then(function (response) {
+                var data = response.data || [];
+                data.forEach(function (d) {
+                    result.push(new Model(d));
+                });
+                deferred.resolve(result, response);
+                $rootScope.$broadcast('SeaModel.' + Model.$config.name + '.query-success', result);
+            })
+            .catch(function (response) {
+                deferred.reject(result, response);
+                $rootScope.$broadcast('SeaModel.' + Model.$config.name + '.query-error', result);
+            })
+            .finally(function () {
+                result.$calling = false;
+            });
+
+            result.$promise = deferred.promise;
+            result.$calling = true;
+            
+            $rootScope.$broadcast('SeaModel.' + Model.$config.name + '.query-started', result);
+
+            return result;
+        };
         
         SeaModel.get = function () {};
 
