@@ -404,7 +404,18 @@ if ( !Array.prototype.forEach ) {
             return result;
         };
         
-        SeaModel.get = function () {};
+        SeaModel.get = function (id) {
+            var Model = this;
+
+            if (!id) {
+                throw 'id argument is required';
+            }
+
+            var instance = new Model();
+            instance[Model.$config.identifier] = id;
+            instance.load();
+            return instance;
+        };
 
         return SeaModel;
     }) ();

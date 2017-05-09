@@ -810,6 +810,25 @@ describe('Sea Test Suite', function () {
                 it('should implement a get method', function () {
                     expect(MyModel.get).to.be.instanceof(Function);
                 });
+
+                it('should throw an error if there is no identifier', function () {
+                    expect(function () {
+                        MyModel.get();
+                    }).to.throw("id argument is required");
+                });
+
+                it('should return an MyModel instance', function () {
+                    var mock = sinon.mock(MyModel.prototype);
+                    mock.expects('load');
+
+                    var obj = MyModel.get(1);
+
+                    expect(obj).to.be.instanceof(MyModel);
+                    expect(obj.id).to.equal(1);
+
+                    mock.verify();
+                    mock.restore();
+                });
             });
         });
 
