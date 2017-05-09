@@ -207,6 +207,72 @@ if ( !Array.prototype.forEach ) {
         return SeaResource;
     }) ();
 
+    var Relationship = (function () {
+        var Relationship = function (model, instance) {
+            this.$object = null;
+            this.$model = model;
+            this.$instance = instance;
+            this.$isLoaded = false;
+        }
+
+        /**
+         * All Relationship objects shal have the get, set and toJS methods
+         **/
+        Relationship.prototype.get = function () { }
+        Relationship.prototype.set = function (v) { };
+        Relationship.prototype.toJS = function () { };
+        
+        return Relationship
+    }) ();
+
+    var BelongsTo = (function () {
+        var BelongsTo = function (model, instance) {
+            Relationship.call(this, model, instance);
+        };
+        
+        Object.assign(BelongsTo, Relationship);
+        BelongsTo.prototype = Object.create(Relationship.prototype);
+        BelongsTo.prototype.constructor = BelongsTo;
+
+        BelongsTo.prototype.get = function () {
+            Relational.prototype.get.call(this);
+        };
+
+        BelongsTo.prototype.set = function (v) {
+            Relational.prototype.set.call(this, v);
+        };
+
+        BelongsTo.prototype.toJS = function () {
+            Relational.prototype.toJS.call(this);
+        };
+        
+        return BelongsTo;
+    }) ();
+
+    var HasMany = (function () {
+        var HasMany = function (model, instance) {
+            Relationship.call(this, model, instance);
+        };
+        
+        Object.assign(HasMany, Relationship);
+        HasMany.prototype = Object.create(Relationship.prototype);
+        HasMany.prototype.constructor = HasMany;
+
+        HasMany.prototype.get = function () {
+            Relational.prototype.get.call(this);
+        };
+
+        HasMany.prototype.set = function (v) {
+            Relational.prototype.set.call(this, v);
+        };
+
+        HasMany.prototype.toJS = function () {
+            Relational.prototype.toJS.call(this);
+        };
+        
+        return HasMany;
+    }) ();
+
     /**
      * Sea Model Class
      * */
@@ -238,6 +304,12 @@ if ( !Array.prototype.forEach ) {
 
             for (var prop in _private[self.$id]) {
                 addProperty(self, prop);
+            }
+
+            for (var prop in _private[self.$id]) {
+                while (typeof _private[self.$id][prop] === 'function') {
+                    _private[self.$id][prop] = _private[self.$id][prop](this);
+                }
             }
         };
 
@@ -543,6 +615,7 @@ if ( !Array.prototype.forEach ) {
     return {
         ModelManager: SeaModelManager,
         Model: SeaModel,
-        Resource: SeaResource
+        Resource: SeaResource,
+        Relationship: Relationship
     };
 }));

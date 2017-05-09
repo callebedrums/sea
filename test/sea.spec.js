@@ -384,15 +384,24 @@ describe('Sea Test Suite', function () {
                     obj = new MyModel({
                         id: 10,
                         name: "Callebe",
-                        num: 345,
-                        other: "Other attr add to this instance"
+                        // any function will be executed and its return will be assined to the propperty
+                        num: function (instance) {
+                            return instance.id + 10;
+                        },
+                        // it will execute all returned function untill get a non function return
+                        other: function (instance) {
+                            var a = instance.id + 10;
+                            return function (i) {
+                                return "other dinamically field: " + a;
+                            }
+                        }
                     });
 
                     expect(obj.getId()).to.equal(10);
                     expect(obj.get('id')).to.equal(10);
                     expect(obj.get('name')).to.equal("Callebe");
-                    expect(obj.get('num')).to.equal(345);
-                    expect(obj.get('other')).to.equal("Other attr add to this instance");
+                    expect(obj.get('num')).to.equal(20);
+                    expect(obj.get('other')).to.equal("other dinamically field: 20");
 
                     obj = new MyModel(20);
 
