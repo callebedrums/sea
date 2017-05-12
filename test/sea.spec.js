@@ -5,7 +5,6 @@ describe('Sea Test Suite', function () {
     beforeEach(module('sea'));
 
     describe('SeaResource', function () {
-
         var $rootScope;
         var $httpBackend;
         var $http;
@@ -178,14 +177,13 @@ describe('Sea Test Suite', function () {
                 resourceMock.verify();
             });
         });
-
     });
 
     describe('SeaModelManager', function () {
-
         var SeaModelManager;
         var SeaModel;
         var SeaResource;
+        var Relationship;
         var $rootScope;
         var $q;
 
@@ -193,6 +191,7 @@ describe('Sea Test Suite', function () {
             SeaModelManager = $injector.get('SeaModelManager');
             SeaModel = Sea.Model;
             SeaResource = Sea.Resource;
+            Relationship = Sea.Relationship;
             $rootScope = $injector.get('$rootScope');
             $q = $injector.get('$q');
         }));
@@ -291,7 +290,8 @@ describe('Sea Test Suite', function () {
                         name: "MyModel",
                         properties: {
                             'name': "",
-                            'num': 0
+                            'num': 0,
+                            'r': Relationship.builder("MyModel")
                         }
                     });
 
@@ -358,6 +358,19 @@ describe('Sea Test Suite', function () {
                     expect(obj.get('unknow')).to.be.undefined;
                     obj.set('unknow', 123);
                     expect(obj.get('unknow')).to.be.undefined;
+
+                    expect(obj.get('r')).to.be.null
+                    obj.set('r', 1);
+                    expect(obj.get('r')).to.equal(1);
+                });
+
+                it('should get the whole object', function () {
+                    expect(obj.get()).to.eql({
+                        id: 0,
+                        name: "",
+                        num: 0,
+                        r: null
+                    });
                 });
 
                 it('should expose each attribute as object attribute', function () {
@@ -386,22 +399,17 @@ describe('Sea Test Suite', function () {
                         name: "Callebe",
                         // any function will be executed and its return will be assined to the propperty
                         num: function (instance) {
-                            return instance.id + 10;
+                            return 20;
                         },
                         // it will execute all returned function untill get a non function return
-                        other: function (instance) {
-                            var a = instance.id + 10;
-                            return function (i) {
-                                return "other dinamically field: " + a;
-                            }
-                        }
+                        other: "test"
                     });
 
                     expect(obj.getId()).to.equal(10);
                     expect(obj.get('id')).to.equal(10);
                     expect(obj.get('name')).to.equal("Callebe");
                     expect(obj.get('num')).to.equal(20);
-                    expect(obj.get('other')).to.equal("other dinamically field: 20");
+                    expect(obj.get('other')).to.be.undefined;
 
                     obj = new MyModel(20);
 
@@ -417,7 +425,8 @@ describe('Sea Test Suite', function () {
                     expect(obj.toJS()).to.eql({
                         id: 1,
                         name: "Callebe",
-                        num: 0
+                        num: 0,
+                        r: null
                     });
                 });
 
@@ -860,6 +869,118 @@ describe('Sea Test Suite', function () {
                 expect(models.length).to.equal(2);
             });
         });
+    });
 
+    describe('Relationship', function () {
+
+        var SeaModelManager;
+        var Relationship;
+        var BelongsTo;
+        var HasMany;
+
+        var ClassA;
+        var ClassB;
+        var instanceA;
+
+        beforeEach(inject(function ($injector) {
+            SeaModelManager = $injector.get('SeaModelManager');
+            Relationship    = Sea.Relationship;
+            BelongsTo       = Sea.BelongsTo;
+            HasMany         = Sea.HasMany;
+        }));
+
+        beforeEach(function () {
+            ClassA = SeaModelManager.newModel({
+                name: "ClassA"
+            });
+
+            instanceA = new ClassA({ id: 1 });
+        });
+
+
+        it('should define a Relationship class', function () {
+            expect(Relationship, 'Relationship is a class').to.be.instanceof(Function);
+        });
+
+        it('should throw an erro when the instance is not SeaModel', function () {
+            expect(function () {
+                new Relationship();
+            }, 'instance is not a seaModel').to.throw('instance is not a Seamodel');
+        });
+
+        it('should throw an error when the Model does not exist', function () {
+            expect(function () {
+                new Relationship(instanceA, "ClassC");
+            }, 'new Relationship should receive a valid Model').to.throw('Unknow model parameter');
+
+            expect(function () {
+                new Relationship(instanceA);
+            }, 'new Relationship should receive a valid Model').to.throw('Unknow model parameter');
+        });
+
+        it('should set up $object, $model, $instance and $isLoaded attributes in constructor', function () {
+            var r = new Relationship(instanceA, "ClassA");
+
+            expect(r.$object, 'r.$object is null').to.be.null;
+            expect(r.$isLoaded, 'r.$isLoaded is false').to.be.false;
+            expect(r.$instance, 'r.$instance is "instance"').to.equal(instanceA);
+            expect(r.$model, 'r.$model is ClassA').to.equal(ClassA);
+        });
+
+        it('should return a function to build the Relationship instance', function () {
+            var builder = Relationship.builder(ClassA);
+
+            expect(builder, 'builder is a function').to.be.instanceof(Function);
+
+            var r = builder(instanceA);
+
+            expect(r, 'r is a Relationship').to.be.instanceof(Relationship);
+            expect(r.$instance, 'r.$instance is instance').to.equal(instanceA);
+            expect(r.$model, 'r.$model is a ClassA').to.equal(ClassA);
+        });
+
+        describe('BelongsTo', function () {
+            it('should return the identifier of the related field', function () {
+                var bt = new BelongsTo(instanceA, ClassA);
+                expect(bt.toJS()).to.be.null;
+
+                bt.$object = instanceA;
+                expect(bt.toJS()).to.equal(instanceA.getId());
+            });
+
+            it('should set the object', function () {
+                var bt = new BelongsTo(instanceA, ClassA);
+                bt.set(instanceA);
+
+                expect(bt.$object).to.equal(instanceA);
+                expect(bt.$isLoaded).to.be.true;
+
+                bt = new BelongsTo(instanceA, ClassA);
+                bt.set(1);
+                expect(bt.$object).to.be.instanceof(ClassA);
+                expect(bt.$object.getId()).to.equal(1);
+                expect(bt.$isLoaded).to.be.false;
+
+                bt.$isLoaded = true;
+                bt.set(1);
+                expect(bt.$isLoaded).to.be.true;
+            });
+
+            it('should get the object', function () {
+                var mock = sinon.mock(instanceA);
+                var bt = new BelongsTo(instanceA, ClassA);
+                bt.$object = instanceA;
+
+                mock.expects('load').once();
+                
+                var obj = bt.get();
+                expect(obj).to.equal(bt.$object);
+
+                obj = bt.get();
+                expect(obj).to.equal(bt.$object);
+
+                mock.verify();
+            });
+        });
     });
 });

@@ -128,6 +128,9 @@ if ( !Array.prototype.forEach ) {
     /** $rootScope - the event api that implements $broadcast method */
     var $rootScope;
 
+    /** SeaModelManagerInstance - the singleton instance of SeaModelManager*/
+    var SeaModelManagerInstance;
+
     var SeaResource = (function () {
 
         var actionMethod = function (self, config) {
@@ -207,27 +210,57 @@ if ( !Array.prototype.forEach ) {
         return SeaResource;
     }) ();
 
+    /**
+     * Relationship interface
+     * */
     var Relationship = (function () {
-        var Relationship = function (model, instance) {
+        var Relationship = function (instance, model) {
             this.$object = null;
-            this.$model = model;
-            this.$instance = instance;
             this.$isLoaded = false;
+
+            if (instance instanceof SeaModel) {
+                this.$instance = instance;
+            } else {
+                throw "instance is not a Seamodel";
+            }
+
+            if (SeaModelManager.instance().getModels()[model]) {
+                this.$model = SeaModelManager.instance().getModels()[model];
+            } else if (model && model.prototype && model.prototype instanceof SeaModel) {
+                this.$model = model;
+            } else {
+                throw "Unknow model parameter"
+            }
         }
 
         /**
          * All Relationship objects shal have the get, set and toJS methods
          **/
-        Relationship.prototype.get = function () { }
-        Relationship.prototype.set = function (v) { };
-        Relationship.prototype.toJS = function () { };
+        Relationship.prototype.get = function () { 
+            return this.$object;
+        }
+
+        Relationship.prototype.set = function (v) {
+            this.$object = v;
+        };
+
+        Relationship.prototype.toJS = function () {
+            return null;
+        };
+
+        Relationship.builder = function (model) {
+            var Model = this;
+            return function (instance) {
+                return new Model(instance, model);
+            };
+        };
         
         return Relationship
     }) ();
 
     var BelongsTo = (function () {
-        var BelongsTo = function (model, instance) {
-            Relationship.call(this, model, instance);
+        var BelongsTo = function (instance, model) {
+            Relationship.call(this, instance, model);
         };
         
         Object.assign(BelongsTo, Relationship);
@@ -235,23 +268,39 @@ if ( !Array.prototype.forEach ) {
         BelongsTo.prototype.constructor = BelongsTo;
 
         BelongsTo.prototype.get = function () {
-            Relational.prototype.get.call(this);
+            if (this.$object && !this.$object.$isNew && !this.$isLoaded) {
+                this.$object.load();
+                this.$isLoaded = true;
+            }
+
+            return this.$object;
         };
 
         BelongsTo.prototype.set = function (v) {
-            Relational.prototype.set.call(this, v);
+            if (v instanceof this.$model) {
+                this.$object = v;
+                this.$isLoaded = true;
+            } else if (v && (!this.$object || this.$object.getId() !== v)) {
+                this.$object = new this.$model();
+                this.$object.setId(v);
+                this.$isLoaded = false;
+            }
         };
 
         BelongsTo.prototype.toJS = function () {
-            Relational.prototype.toJS.call(this);
+            if (this.$object) {
+                return this.$object.getId();
+            }
+
+            return null;
         };
         
         return BelongsTo;
     }) ();
 
     var HasMany = (function () {
-        var HasMany = function (model, instance) {
-            Relationship.call(this, model, instance);
+        var HasMany = function (instance, model, related_field) {
+            Relationship.call(this, instance, model);
         };
         
         Object.assign(HasMany, Relationship);
@@ -259,15 +308,19 @@ if ( !Array.prototype.forEach ) {
         HasMany.prototype.constructor = HasMany;
 
         HasMany.prototype.get = function () {
-            Relational.prototype.get.call(this);
         };
 
         HasMany.prototype.set = function (v) {
-            Relational.prototype.set.call(this, v);
         };
 
         HasMany.prototype.toJS = function () {
-            Relational.prototype.toJS.call(this);
+        };
+
+        HasMany.builder = function (model, related_field) {
+            var Model = this;
+            return function (instance) {
+                return new Model(instance, model, related_field);
+            };
         };
         
         return HasMany;
@@ -292,24 +345,24 @@ if ( !Array.prototype.forEach ) {
 
             _private[self.$id] = Object.assign({}, self.$config.properties);
 
-            if (typeof data !== 'object') {
-                _private[self.$id][self.$config.identifier] = data;
-            } else {
-                Object.assign(_private[self.$id], data);
-            }
-
             if (_private[self.$id][self.$config.identifier] === undefined) {
                 _private[self.$id][self.$config.identifier] = 0;
-            }
-
-            for (var prop in _private[self.$id]) {
-                addProperty(self, prop);
             }
 
             for (var prop in _private[self.$id]) {
                 while (typeof _private[self.$id][prop] === 'function') {
                     _private[self.$id][prop] = _private[self.$id][prop](this);
                 }
+            }
+
+            if (typeof data !== 'object') {
+                self.setId(data);
+            } else {
+                self.set(data);
+            }
+
+            for (var prop in _private[self.$id]) {
+                addProperty(self, prop);
             }
         };
 
@@ -323,6 +376,10 @@ if ( !Array.prototype.forEach ) {
                 /* istanbul ignore else  */
                 if (_private[self.$id].hasOwnProperty(attr)) {
                     obj[attr] = _private[self.$id][attr];
+                }
+
+                if (obj[attr] instanceof Relationship) {
+                    obj[attr] = obj[attr].toJS();
                 }
             }
 
@@ -338,20 +395,34 @@ if ( !Array.prototype.forEach ) {
         };
 
         SeaModel.prototype.get = function (prop) {
-            return _private[this.$id][prop];
+            if (prop === this.$config.identifier) {
+                return this.getId();
+            }
+
+            if (typeof prop === "string") {
+                if (_private[this.$id][prop] instanceof Relationship) {
+                    return _private[this.$id][prop].get();
+                }
+                return _private[this.$id][prop];
+            }
+
+            return this.toJS();
         };
 
         SeaModel.prototype.set = function (prop, value) {
-            if (prop && prop in _private[this.$id]) {
-                _private[this.$id][prop] = value;
-            } else if (typeof prop === 'object') {
-                this.setObj(prop)
+            while (typeof value === "function") {
+                value = value(this);
             }
-        };
 
-        SeaModel.prototype.setObj = function (obj) {
-            if (typeof obj === 'object') {
-                for (var prop in obj) {
+            if (prop && prop in _private[this.$id]) {
+                if (_private[this.$id][prop] instanceof Relationship) {
+                    _private[this.$id][prop].set(value);
+                } else {
+                    _private[this.$id][prop] = value;
+                }
+            } else if (typeof prop === 'object') {
+                var obj = prop;
+                for (prop in obj) {
                     /* istanbul ignore else  */
                     if (obj.hasOwnProperty(prop)) {
                         this.set(prop, obj[prop]);
@@ -605,17 +676,24 @@ if ( !Array.prototype.forEach ) {
         };
 
         this.$get = ['$rootScope', '$http', '$q', function (_$rootScope, _$http, _$q) {
-            $rootScope  = _$rootScope;
-            $http       = _$http;
-            $q          = _$q;
+            $rootScope              = _$rootScope;
+            $http                   = _$http;
+            $q                      = _$q;
+            SeaModelManagerInstance = self;
             return self;
         }];
+    };
+
+    SeaModelManager.instance = function () {
+        return SeaModelManagerInstance;
     };
 
     return {
         ModelManager: SeaModelManager,
         Model: SeaModel,
         Resource: SeaResource,
-        Relationship: Relationship
+        Relationship: Relationship,
+        BelongsTo: BelongsTo,
+        HasMany: HasMany
     };
 }));
