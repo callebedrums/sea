@@ -891,7 +891,8 @@ describe('Sea Test Suite', function () {
 
         beforeEach(function () {
             ClassA = SeaModelManager.newModel({
-                name: "ClassA"
+                name: "ClassA",
+                other: 0
             });
 
             instanceA = new ClassA({ id: 1 });
@@ -980,6 +981,103 @@ describe('Sea Test Suite', function () {
                 expect(obj).to.equal(bt.$object);
 
                 mock.verify();
+            });
+        });
+
+        describe('HasMany', function () {
+            var hm;
+            var getId;
+
+            beforeEach(function () {
+                hm = new HasMany(instanceA, ClassA, 'other');
+                getId = function () {
+                    return this.id;
+                };
+            });
+
+            it('should build a HasMany relationship', function () {
+                var builder = HasMany.builder(ClassA, 'field');
+
+                expect(builder, 'builder is a function').to.be.instanceof(Function);
+
+                var r = builder(instanceA);
+
+                expect(r, 'r is a HasMany Relationship').to.be.instanceof(HasMany);
+                expect(r.$instance, 'r.$instance is instance').to.equal(instanceA);
+                expect(r.$model, 'r.$model is a ClassA').to.equal(ClassA);
+            });
+
+            it('should throw an error if relatedField parameter is not provided', function () {
+                expect(function () {
+                    new HasMany(instanceA, ClassA);
+                }).to.throw("invalid relatedField parameter");
+            });
+
+            it('should return the identifiers array of related objects', function () {
+                expect(hm.toJS()).to.be.null;
+
+                hm.$object = [{
+                    id: 1,
+                    getId: getId
+                }, {
+                    id: 3,
+                    getId: getId
+                }, {
+                    id: 4,
+                    getId: getId
+                }];
+
+                expect(hm.toJS()).to.eql([1, 3, 4]);
+            });
+
+            it('should return true if it has object', function () {
+                expect(hm.hasObject(1)).to.be.false;
+
+                hm.$object = [{
+                    id: 1,
+                    getId: getId
+                }];
+
+                expect(hm.hasObject(1)).to.be.true;
+                expect(hm.hasObject(2)).to.be.false;
+            });
+
+            it('should set the object to null', function () {
+                hm.$object = [];
+                hm.$isLoaded = true;
+
+                hm.set(null);
+
+                expect(hm.$object).to.be.null;
+                expect(hm.$isLoaded).to.be.false;
+            });
+
+            it('should add a Model instance to the array', function () {
+                var a = new ClassA({ id: 2 });
+
+                hm.set(a);
+                expect(hm.$object).to.have.length(1);
+                expect(hm.$object[0]).to.equal(a);
+
+                hm.set(a);
+                expect(hm.$object).to.have.length(1);
+                expect(hm.$object[0]).to.equal(a);
+
+                hm.set(3);
+                expect(hm.$object).to.have.length(2);
+                expect(hm.$object[1].getId()).to.equal(3);
+
+                hm.set();
+            });
+
+            it('should set an array', function () {
+                var arr = [new ClassA({ id: 2 }), new ClassA({ id: 3 }), "obj", {}];
+
+                hm.set(arr);
+
+                expect(hm.$object).to.have.length(2);
+                expect(hm.$object[0].getId()).to.equal(2);
+                expect(hm.$object[1].getId()).to.equal(3);
             });
         });
     });

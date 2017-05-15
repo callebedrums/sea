@@ -17,5 +17,8 @@
 
     module.provider('SeaModelManager', Sea.ModelManager);
 
+    module.value('BelongsTo', Sea.BelongsTo);
+    module.value('HasMany', Sea.HasMany);
+
     return module;
 }));
